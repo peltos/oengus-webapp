@@ -1,17 +1,24 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { Router } from '@angular/router';
 import { SelfUser, User, UserSupporterStatus } from '../model/user';
-import { NwbAlertService } from '@oengus/ng-wizi-bulma';
 import { firstValueFrom, Observable, of, Subscription } from 'rxjs';
 import { ValidationErrors } from '@angular/forms';
 import { UserProfile } from '../model/user-profile';
 import { BaseService } from './BaseService';
 import { PatreonStatusDto, RelationShip } from '../model/annoying-patreon-shit';
-import { HistoryMarathon, SavedGame, UserProfileHistory } from '../model/user-profile-history';
+import {
+  HistoryMarathon,
+  HistoryMarathonRawApi,
+  SavedGame,
+  UserProfileHistory,
+  UserProfileHistoryRawApi,
+} from '../model/user-profile-history';
 import { BooleanStatusDto, DataListDto } from '../model/dto/base-dtos';
 import { map } from 'rxjs/operators';
+import { TemporalServiceService } from './termporal/temporal-service.service';
+import { NotificationService } from './notification.service';
 
 
 @Injectable({
@@ -20,12 +27,12 @@ import { map } from 'rxjs/operators';
 export class UserService extends BaseService {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private temporalService = inject(TemporalServiceService);
 
-
-  private _user: SelfUser;
+  private _user: SelfUser | null = null;
 
   constructor() {
-    const toastr = inject(NwbAlertService);
+    const toastr = inject(NotificationService);
 
     super(toastr, 'users');
   }
@@ -66,7 +73,7 @@ export class UserService extends BaseService {
   updateRoles(userId: number, roles: string[]): Observable<BooleanStatusDto> {
     return this.http.put<BooleanStatusDto>(
       this.v2Url(`${userId}/roles`),
-      { data: roles }
+      {data: roles},
     );
   }
 
@@ -143,7 +150,7 @@ export class UserService extends BaseService {
 
   // TODO: does not exist yet
   /*search(name: string): Observable<User[]> {
-    return this.http.get<User[]>(this.url(`search?q=${name}`, 'v2'));
+    return this.http.get<User[]>(this.v2Url(`search?q=${name}`));
   }*/
 
   ban(id: number): Observable<void> {
@@ -167,11 +174,25 @@ export class UserService extends BaseService {
   }
 
   getSubmissionHistory(id: number): Observable<DataListDto<UserProfileHistory>> {
-    return this.http.get<DataListDto<UserProfileHistory>>(this.v2Url(`${id}/submission-history`));
+    return this.http.get<DataListDto<UserProfileHistoryRawApi>>(this.v2Url(`${id}/submission-history`))
+      .pipe(map((raw) => ({
+        ...raw,
+        data: raw.data.map((hist) => ({
+          ...hist,
+          marathonStartDate: this.temporalService.parseDate(hist.marathonStartDate),
+        })),
+      })));
   }
 
   getModerationHistory(id: number): Observable<DataListDto<HistoryMarathon>> {
-    return this.http.get<DataListDto<HistoryMarathon>>(this.v2Url(`${id}/moderation-history`));
+    return this.http.get<DataListDto<HistoryMarathonRawApi>>(this.v2Url(`${id}/moderation-history`))
+      .pipe(map((raw) => ({
+        ...raw,
+        data: raw.data.map((hist) => ({
+          ...hist,
+          marathonStartDate: this.temporalService.parseDate(hist.marathonStartDate),
+        })),
+      })));
   }
 
   getSavedGamesList(id: number | '@me'): Observable<DataListDto<SavedGame>> {
@@ -183,11 +204,11 @@ export class UserService extends BaseService {
   }
 
   isBanned(): boolean {
-    return this._user.roles.includes('ROLE_BANNED');
+    return !!this._user?.roles?.includes('ROLE_BANNED');
   }
 
   isAdmin(): boolean {
-    return this._user.roles.includes('ROLE_ADMIN');
+    return !!this._user?.roles?.includes('ROLE_ADMIN');
   }
 
   isLoggedIn(): boolean {
@@ -203,11 +224,12 @@ export class UserService extends BaseService {
     localStorage.setItem('token', value);
   }
 
-  get token(): string {
+  get token(): string | null {
     return localStorage.getItem('token');
   }
 
   get user(): SelfUser {
+    // @ts-expect-error meh.
     return this._user;
   }
 }

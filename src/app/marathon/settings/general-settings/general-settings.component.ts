@@ -1,9 +1,8 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
-import { OwlDateTimeModule, OwlNativeDateTimeModule } from '@oengus/angular-datetime-picker';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
+import { OwlDateTimeModule } from '@oengus/angular-datetime-picker';
 import { AutocompleteLibModule } from 'angular-ng-autocomplete';
 import { MarathonSettingsWithHelpfulProps } from '../../../../model/marathon';
 import { MarathonService } from '../../../../services/marathon.service';
@@ -14,60 +13,56 @@ import { UserService } from '../../../../services/user.service';
 import { debounce } from 'lodash';
 import { firstValueFrom } from 'rxjs';
 import { UserProfile } from '../../../../model/user-profile';
-import { connectionMetas } from '../../../../model/social-account';
+import { ConnectionMeta, connectionMetas } from '../../../../model/social-account';
 import { DirectivesModule } from '../../../directives/directives.module';
-import { ElementCountryComponent } from '../../../elements/element-country/element-country.component';
-import { ElementLanguagesComponent } from '../../../elements/element-languages/element-languages.component';
-import { UserLinkComponent } from '../../../elements/user-link/user-link.component';
 import { DescriptionEditorComponent } from './description-editor/description-editor.component';
 import { ElementI18nComponent } from '../../../elements/element-i18n/element-i18n.component';
+import { User } from '../../../../model/user';
+import { NwbSwitchComponent } from '../../../components/wizi/switch/switch.component';
 
 @Component({
     selector: 'app-marathon-general-settings',
     templateUrl: './general-settings.component.html',
     styleUrls: ['./general-settings.component.scss'],
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        OwlDateTimeModule,
-        OwlNativeDateTimeModule,
-        NwbSwitchModule,
-        AutocompleteLibModule,
-        DirectivesModule,
-        ElementCountryComponent,
-        ElementLanguagesComponent,
-        UserLinkComponent,
-        DescriptionEditorComponent,
-        ElementI18nComponent,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    OwlDateTimeModule,
+    AutocompleteLibModule,
+    DirectivesModule,
+    DescriptionEditorComponent,
+    ElementI18nComponent,
+    NwbSwitchComponent,
+  ],
 })
 export class GeneralSettingsComponent implements OnInit {
   marathonService = inject(MarathonService);
   userService = inject(UserService);
 
-
+  // @ts-expect-error meh.
   @Input() public settings: MarathonSettingsWithHelpfulProps;
-  @Input() public moderators: UserProfile[];
-  @Input() public updateStartTime: boolean;
-  @Input() public disabled: boolean;
+  @Input() public moderators: UserProfile[] = [];
+  @Input() public updateStartTime = false;
+  @Input() public disabled = false;
 
   @Output() public stateUpdate = new EventEmitter<boolean>();
 
-  public userResults = [];
+  public userResults: User[] = [];
   public countries = countriesImport as unknown as Map<string, string>;
   public languages = isoLang;
 
   public now: Date;
   public env = environment;
 
-  bskySettings = connectionMetas.BLUESKY;
+  bskySettings = connectionMetas.BLUESKY as ConnectionMeta & { regex: string };
   mastodonSettings = connectionMetas.MASTODON;
 
   marathonDescMaxLen = 10000;
 
   // TODO: remove support for bot webhook (and give it its own settings)
-  public loadWebhookCheck: boolean;
+  public loadWebhookCheck = false;
   public isWebhookOnline = true;
   public isOengusBotWebhook = false;
   public isMissingMarathon = false;

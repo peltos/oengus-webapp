@@ -1,23 +1,23 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { NwbCommonModule } from '@oengus/ng-wizi-bulma';
+import { NwbToolTipDirective } from '../../components/wizi/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-delete-button',
   templateUrl: './delete-button.component.html',
   styleUrls: ['./delete-button.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     TranslateModule,
     FontAwesomeModule,
-    NwbCommonModule,
+    NwbToolTipDirective,
   ],
 })
 export class DeleteButtonComponent {
-
   public faTimes = faTimes;
   public faCheck = faCheck;
 
@@ -25,9 +25,9 @@ export class DeleteButtonComponent {
 
   @Output() public confirmHandler = new EventEmitter<void>();
   @Output() public cancelHandler = new EventEmitter<void>();
-  @Input() public baseText: string;
-  @Input() public confirmText: string;
-  @Input() public cancelText: string;
+  @Input() public baseText = '';
+  @Input() public confirmText = '';
+  @Input() public cancelText = '';
 
   confirm() {
     this.showConfirm = true;

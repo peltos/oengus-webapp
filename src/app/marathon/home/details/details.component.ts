@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -16,6 +16,7 @@ import { ElementTwitchPlayerComponent } from '../../../elements/element-twitch-p
     selector: 'app-details',
     templateUrl: './details.component.html',
     styleUrls: ['./details.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         TranslateModule,
@@ -26,6 +27,7 @@ import { ElementTwitchPlayerComponent } from '../../../elements/element-twitch-p
     ]
 })
 export class DetailsComponent {
+  // @ts-expect-error meh.
   @Input() marathon: Marathon;
 
   public faTwitch = faTwitch;
@@ -41,8 +43,8 @@ export class DetailsComponent {
       return false;
     }
 
-    const start = new Date(this.marathon.startDate).getTime();
-    const end = new Date(this.marathon.endDate).getTime();
+    const start = this.marathon.startDate.epochMilliseconds;
+    const end = this.marathon.endDate.epochMilliseconds;
     const now = Date.now();
     return start <= now && now <= end;
   }

@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -8,7 +8,6 @@ import { ActivatedRoute } from '@angular/router';
 import { SelectionService } from '../../../services/selection.service';
 import { MarathonService } from '../../../services/marathon.service';
 import { DurationService } from '../../../services/duration.service';
-import moment from 'moment-timezone';
 import { Selection } from '../../../model/selection';
 import { Availability } from '../../../model/availability';
 import { DataSetDataGroup, DataSetDataItem, Timeline } from 'vis-timeline/esnext';
@@ -18,11 +17,13 @@ import { Submission } from '../../../model/submission';
 import { firstValueFrom } from 'rxjs';
 import { UserComponent } from '../../oengus-common/user/user.component';
 import { LoadingIndicatorComponent } from '../../elements/loading-indicator/loading-indicator.component';
+import { TemporalServiceService } from '../../../services/termporal/temporal-service.service';
 
 @Component({
-    selector: 'app-selection',
-    templateUrl: './selection.component.html',
-    styleUrls: ['./selection.component.scss'],
+  selector: 'app-selection',
+  templateUrl: './selection.component.html',
+  styleUrls: ['./selection.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
@@ -37,7 +38,7 @@ export class SelectionComponent implements OnInit {
   private selectionService = inject(SelectionService);
   private submissionService = inject(SubmissionService);
   private marathonService = inject(MarathonService);
-
+  private temporalService = inject(TemporalServiceService);
 
   public submissionsLoaded = false;
   public submissions: Submission[] = [];
@@ -48,13 +49,13 @@ export class SelectionComponent implements OnInit {
   public faCalendarWeek = faCalendarWeek;
   public faCalendarTimes = faCalendarTimes;
 
-  @ViewChild('timeline', {static: false}) timeline: ElementRef;
+  // @ts-expect-error meh.
+  @ViewChild('timeline', { static: false }) timeline: ElementRef;
   public availabilitiesGroups: DataSetDataGroup;
   public availabilitiesItems: DataSetDataItem;
 
-  public availabilitiesSelected = [];
+  public availabilitiesSelected: string[] = [];
 
-  private timezone = moment.tz.guess();
   readonly title = 'Select Runs';
 
   constructor() {
@@ -89,8 +90,8 @@ export class SelectionComponent implements OnInit {
   async loadSelection(): Promise<void> {
     // @ts-expect-error SHUT UP
     this.selection = await firstValueFrom(this.selectionService.getAllForMarathonAdmin(
-      this.route.snapshot.parent.paramMap.get('id'),
-      this.route.snapshot.data['statuses'])
+      this.route.snapshot.parent?.paramMap.get('id') ?? '',
+      this.route.snapshot.data['statuses']),
     )
       .catch(() => new Map());
   }
@@ -99,13 +100,22 @@ export class SelectionComponent implements OnInit {
     // Somehow this delay solves the availabilities not showing.
     await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
+    const oneHour = Temporal.Duration.from({ hours: 1 });
+    const timelineEl = document.getElementById('timeline');
+
+    if (!timelineEl) {
+      throw new Error('missing timeline');
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const timeline = new Timeline(document.getElementById('timeline'),
+    const timeline = new Timeline(timelineEl,
       this.availabilitiesItems,
       this.availabilitiesGroups,
       {
-        min: moment.tz(this.marathonService.marathon.startDate, this.timezone).subtract(1, 'hours').toDate(),
-        max: moment.tz(this.marathonService.marathon.endDate, this.timezone).add(1, 'hours').toDate()
+        min: this.temporalService.parseDate(this.marathonService.marathon.startDate as unknown as string)
+          .subtract(oneHour).epochMilliseconds,
+        max: this.temporalService.parseDate(this.marathonService.marathon.endDate as unknown as string)
+          .add(oneHour).epochMilliseconds,
       });
   }
 
@@ -139,7 +149,7 @@ export class SelectionComponent implements OnInit {
   }
 
   getNumberOfRunners() {
-    const runners = [];
+    const runners: number[] = [];
     this.submissions.forEach(submission => {
       if (!runners.includes(submission.user.id)) {
         runners.push(submission.user.id);
@@ -149,16 +159,16 @@ export class SelectionComponent implements OnInit {
   }
 
   getTotalTime() {
-    const duration = moment.duration(0);
+    let duration = Temporal.Duration.from({ seconds: 0 });
     this.submissions.forEach(submission => {
       submission.games.forEach(game => {
         game.categories.forEach(category => {
-          duration.add(category.estimate);
+          duration = duration.add(category.estimate);
         });
       });
     });
 
-    return DurationService.toHuman(duration.toISOString());
+    return DurationService.toHuman(duration);
   }
 
   getAverageTime() {
@@ -167,24 +177,31 @@ export class SelectionComponent implements OnInit {
       return '0:00:00';
     }
 
-    const duration = moment.duration(0);
+    let duration = Temporal.Duration.from({ seconds: 0 });
     this.submissions.forEach(submission => {
       submission.games.forEach(game => {
         game.categories.forEach(category => {
-          duration.add(category.estimate);
+          duration = duration.add(category.estimate);
         });
       });
     });
 
-    const averageDuration = moment.duration(duration.asMilliseconds() / numberOfRuns);
-    return DurationService.toHuman(averageDuration.toISOString());
+    const avgMs = Math.ceil(duration.total('milliseconds') / numberOfRuns);
+    const averageDuration = Temporal.Duration.from({ milliseconds: avgMs }).round({
+      largestUnit: 'hours',
+      smallestUnit: 'seconds',
+    });
+
+    return DurationService.toHuman(averageDuration);
   }
 
   getMarathonLength() {
-    const end = moment(this.marathonService.marathon.endDate).tz(this.timezone).seconds(0);
-    const start = moment(this.marathonService.marathon.startDate).tz(this.timezone).seconds(0);
-    const diff = moment.duration(end.diff(start));
-    return DurationService.toHuman(diff.toISOString());
+    const start = this.temporalService.parseDate(this.marathonService.marathon.startDate as unknown as string).round('minutes');
+    const end = this.temporalService.parseDate(this.marathonService.marathon.endDate as unknown as string).round('minutes');
+
+    const diff = start.until(end);
+
+    return DurationService.toHuman(diff);
   }
 
   getDefaultSetupTime() {
@@ -192,25 +209,27 @@ export class SelectionComponent implements OnInit {
   }
 
   getValidatedRunsTime() {
-    const duration = moment.duration(0);
+    let duration = Temporal.Duration.from({ seconds: 0 });
     this.submissions.forEach(submission => {
       submission.games.forEach(game => {
         game.categories.forEach(category => {
           if (this.selection[category.id].status === 'VALIDATED') {
-            duration.add(category.estimate);
-            duration.add(moment.duration(this.marathonService.marathon.defaultSetupTime));
+            duration = duration.add(category.estimate)
+              .add(this.marathonService.marathon.defaultSetupTime);
           }
         });
       });
     });
-    if (duration.asMilliseconds() > 0) {
-      duration.subtract(moment.duration(this.marathonService.marathon.defaultSetupTime));
+
+    if (duration.total('milliseconds') > 0) {
+      duration = duration.subtract(this.marathonService.marathon.defaultSetupTime);
     }
-    return DurationService.toHuman(duration.toISOString());
+
+    return DurationService.toHuman(duration);
   }
 
   setTodoToDeclined(): void {
-       for (const catId in this.selection) {
+    for (const catId in this.selection) {
       if (this.selection[catId].status === 'TODO') {
         this.selection[catId].status = 'REJECTED';
       }
@@ -243,15 +262,15 @@ export class SelectionComponent implements OnInit {
         this.availabilitiesSelected.push(key);
         this.availabilitiesGroups.add({
           id: key,
-          content: availabilityArray[0].username
+          content: availabilityArray[0].username,
         });
         availabilityArray.forEach((availability, index) => {
           this.availabilitiesItems.add({
             id: key + index,
             group: key,
-            start: availability.from,
-            end: availability.to,
-            content: ''
+            start: availability.from.epochMilliseconds,
+            end: availability.to.epochMilliseconds,
+            content: '',
           });
         });
       }
@@ -260,14 +279,14 @@ export class SelectionComponent implements OnInit {
 
   removeAvailabilitiesForRunner(username: string) {
     this.availabilitiesGroups.remove(username);
-    this.availabilitiesItems.remove(this.availabilitiesItems.getIds({filter: (item) => item.group === username}));
+    this.availabilitiesItems.remove(this.availabilitiesItems.getIds({ filter: (item) => item.group === username }));
     this.availabilitiesSelected.splice(this.availabilitiesSelected.findIndex(name => name === username), 1);
   }
 
   clearAvailabilities() {
     this.availabilitiesSelected.forEach(username => {
       this.availabilitiesGroups.remove(username);
-      this.availabilitiesItems.remove(this.availabilitiesItems.getIds({filter: (item) => item.group === username}));
+      this.availabilitiesItems.remove(this.availabilitiesItems.getIds({ filter: (item) => item.group === username }));
     });
     this.availabilitiesSelected = [];
   }

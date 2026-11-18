@@ -1,4 +1,4 @@
-import { Component, HostBinding, Input } from '@angular/core';
+import { Component, HostBinding, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -11,6 +11,7 @@ import { faBullseye, faDonate, faMoneyBill } from '@fortawesome/free-solid-svg-i
     selector: 'app-sidebar-tracker',
     templateUrl: './sidebar-tracker.component.html',
     styleUrls: ['./sidebar-tracker.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         RouterModule,
@@ -20,6 +21,7 @@ import { faBullseye, faDonate, faMoneyBill } from '@fortawesome/free-solid-svg-i
     ]
 })
 export class SidebarTrackerComponent {
+  // @ts-expect-error meh.
   @Input() marathon: Marathon;
   @HostBinding('class.collapsed') @Input() collapsed = false;
 
@@ -36,8 +38,8 @@ export class SidebarTrackerComponent {
       return false;
     }
 
-    const start = new Date(this.marathon.startDate).getTime();
-    const end = new Date(this.marathon.endDate).getTime();
+    const start = this.marathon.startDate.epochMilliseconds;
+    const end = this.marathon.endDate.epochMilliseconds;
     const now = Date.now();
     return this.marathon.hasDonations && this.marathon.donationsOpen && (start <= now && now <= end);
   }

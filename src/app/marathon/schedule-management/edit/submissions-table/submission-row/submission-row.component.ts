@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -10,11 +10,13 @@ import { ElementTableCellComponent } from '../../../../../elements/element-table
 import { ElementTemporalDurationComponent } from '../../../../../elements/temporal/element-temporal-duration/element-temporal-duration.component';
 import { RouterModule } from '@angular/router';
 import { LocalizeRouterModule } from '@oengusio/ngx-translate-router';
+import { IdType } from 'vis-timeline/esnext';
 
 @Component({
     selector: 'app-submission-row',
     templateUrl: './submission-row.component.html',
     styleUrls: ['./submission-row.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         TranslateModule,
@@ -33,9 +35,11 @@ export class SubmissionRowComponent {
   getRunnerUsername = getRunnerUsername;
   getRunnerDisplayName = getRunnerDisplayName;
 
+  // @ts-expect-error meh.
   @Input() i: number;
+  // @ts-expect-error meh.
   @Input() line: V2ScheduleLine;
-  @Input() selectedAvailabilities: string[] = [];
+  @Input() selectedAvailabilities: IdType[] = [];
   @Output() moveToSchedule = new EventEmitter<number>();
   @Output() selectAvailability = new EventEmitter<{ username: string, on: boolean }>();
 }

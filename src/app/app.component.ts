@@ -1,44 +1,48 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet, Event as RouterEvent, NavigationCancel, NavigationEnd, NavigationError, NavigationStart } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
-import { DateTimeAdapter } from '@oengus/angular-datetime-picker';
-import { Location } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
+import {
+  Event as RouterEvent,
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 import { UserService } from '../services/user.service';
 import { LoadingBarService } from '../services/loading-bar.service';
 import { TitleService } from '../services/title.service';
-import { NwbAlertConfig, NwbAlertService } from '@oengus/ng-wizi-bulma';
 import * as Sentry from '@sentry/angular';
-import { TemporalServiceService } from '../services/termporal/temporal-service.service';
 import { LocaleService } from '../services/locale.service';
 import { FaConfig } from '@fortawesome/angular-fontawesome';
 import { environment } from '../environments/environment';
 import { HeaderBarComponent } from './_layout/header-bar/header-bar.component';
 import { FooterBarComponent } from './_layout/footer/footer-bar/footer-bar.component';
 import { NotificationListComponent } from './components/notification-list/notification-list.component';
+import { NotificationService } from '../services/notification.service';
+import { NwbAlertComponent } from './components/wizi/alert/alert.component';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
-    imports: [
-        CommonModule,
-        RouterOutlet,
-        HeaderBarComponent,
-        FooterBarComponent,
-        NotificationListComponent,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    HeaderBarComponent,
+    FooterBarComponent,
+    NotificationListComponent,
+    NwbAlertComponent,
+  ],
 })
 export class AppComponent implements OnInit {
   userService = inject(UserService);
-  private translate = inject(TranslateService);
-  private toastr = inject(NwbAlertService);
-  private dateTimeAdapter = inject<DateTimeAdapter<unknown>>(DateTimeAdapter);
+  private toastr = inject(NotificationService);
   private router = inject(Router);
   private location = inject(Location);
   private titleService = inject(TitleService);
   private loader = inject(LoadingBarService);
-  private temporal = inject(TemporalServiceService);
   private localeService = inject(LocaleService);
 
   title = !environment.sandbox ? 'Oengus' : 'Oengus [Sandbox]';
@@ -69,15 +73,7 @@ export class AppComponent implements OnInit {
         // Is this user activated?
         if (user && user.email && !user.enabled) {
           this.userService.logout(false);
-          this.translate.get('alert.user.login.disabledAccount').subscribe((res: string) => {
-            const alertConfig: NwbAlertConfig = {
-              message: res,
-              duration: 5000,
-              position: 'is-right',
-              color: 'is-warning'
-            };
-            this.toastr.open(alertConfig);
-          });
+          this.toastr.toast('alert.user.login.disabledAccount', 5000, 'warning');
 
           return;
         }
@@ -99,7 +95,8 @@ export class AppComponent implements OnInit {
     this.localeService.initialize();
   }
 
-  onRouteActivated(component) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onRouteActivated(component: any) {
     if (Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(component), 'title')) {
       this.titleService.setTitle(component.title);
     } else {

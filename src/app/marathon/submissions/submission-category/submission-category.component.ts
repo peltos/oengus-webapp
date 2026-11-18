@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -14,6 +14,7 @@ import { SimpleMdComponent } from '../../../components/simple-md/simple-md.compo
     selector: 'app-submission-category',
     templateUrl: './submission-category.component.html',
     styleUrls: ['./submission-category.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         TranslateModule,
@@ -26,16 +27,20 @@ import { SimpleMdComponent } from '../../../components/simple-md/simple-md.compo
 })
 export class SubmissionCategoryComponent implements OnInit, OnDestroy {
 
+  // @ts-expect-error meh.
   @Input() public category: Category;
+  // @ts-expect-error meh.
   @Input() public marathon: Marathon;
+  // @ts-expect-error meh.
   @Input() public rawStatus: string;
+  // @ts-expect-error meh.
   @Input() public showDelete: boolean;
 
   @Output() public triggerDelete = new EventEmitter<void>();
 
   public faFilm = faFilm;
   public faTimes = faTimes;
-  public status: string;
+  public status = '';
 
   private statusMap = {
     'VALIDATED': 'is-success',
@@ -53,6 +58,7 @@ export class SubmissionCategoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // @ts-expect-error meh.
     this.status = this.statusMap[this.safeStatus] || '';
   }
 

@@ -1,10 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Selection } from '../model/selection';
-import { NwbAlertService } from '@oengus/ng-wizi-bulma';
 import { TranslateService } from '@ngx-translate/core';
-import {BaseService} from './BaseService';
+import { BaseService } from './BaseService';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,17 +15,17 @@ export class SelectionService extends BaseService {
 
 
   constructor() {
-    const toastr = inject(NwbAlertService);
+    const toastr = inject(NotificationService);
 
     super(toastr, 'marathons');
   }
 
-  getAllForMarathon(marathonId: string, statuses = []): Observable<Map<number, Selection>> {
+  getAllForMarathon(marathonId: string, statuses: string[] = []): Observable<Map<number, Selection>> {
     const params = new HttpParams().set('status', statuses.join(','));
     return this.http.get<Map<number, Selection>>(this.url(`${marathonId}/selections`), {params: params});
   }
 
-  getAllForMarathonAdmin(marathonId: string, statuses = []): Observable<Map<number, Selection>> {
+  getAllForMarathonAdmin(marathonId: string, statuses: string[] = []): Observable<Map<number, Selection>> {
     const params = new HttpParams().set('status', statuses.join(','));
     return this.http.get<Map<number, Selection>>(this.url(`${marathonId}/selections/admin`), { params: params });
   }

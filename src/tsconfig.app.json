@@ -5,10 +5,18 @@
     "esModuleInterop": true,
     "outDir": "../out-tsc/app",
     "types": [],
-    "downlevelIteration": true
+    "lib": ["esnext", "esnext.temporal", "esnext.intl", "esnext.date"]
   },
   "exclude": [
     "test.ts",
     "**/*.spec.ts"
-  ]
+  ],
+  "angularCompilerOptions": {
+    "extendedDiagnostics": {
+      "checks": {
+        "nullishCoalescingNotNullable": "suppress",
+        "optionalChainNotNullable": "suppress"
+      }
+    }
+  }
 }

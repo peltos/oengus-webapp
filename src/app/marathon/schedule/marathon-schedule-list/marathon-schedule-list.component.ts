@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -11,6 +11,7 @@ import { ComponentsModule } from '../../../components/components.module';
     selector: 'app-marathon-schedule-list',
     templateUrl: './marathon-schedule-list.component.html',
     styleUrls: ['./marathon-schedule-list.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         TranslateModule,
@@ -23,9 +24,13 @@ import { ComponentsModule } from '../../../components/components.module';
     ]
 })
 export class MarathonScheduleListComponent implements OnChanges, OnInit {
+  // @ts-expect-error meh.
   @Input() runs: V2ScheduleLine[];
-  @Input() currentRun: V2ScheduleLine;
-  @Input() nextRun: V2ScheduleLine;
+  // @ts-expect-error meh.
+  @Input() currentRun: V2ScheduleLine | null;
+  // @ts-expect-error meh.
+  @Input() nextRun: V2ScheduleLine | null;
+  // @ts-expect-error meh.
   @Input() runHash: string;
 
   iconUser = faUser;
@@ -54,13 +59,13 @@ export class MarathonScheduleListComponent implements OnChanges, OnInit {
     }
 
     // Otherwise, only show when the day transitioned
-    const currentRun = new Date(this.runs[index].date);
+    const currentRun = this.runs[index].date;
     // We have an implicit index test for the index=0 case, so this is always safe
-    const previousRun = new Date(this.runs[index - 1].date);
+    const previousRun = this.runs[index - 1].date;
 
-    return currentRun.getDate() !== previousRun.getDate() ||
-      currentRun.getMonth() !== previousRun.getMonth() ||
-      currentRun.getFullYear() !== previousRun.getFullYear();
+    return currentRun.day !== previousRun.day ||
+      currentRun.month !== previousRun.month ||
+      currentRun.year !== previousRun.year;
   }
 
   getRowParity(index: number, run: V2ScheduleLine): { 'is-primary': boolean, 'is-even': boolean, 'is-odd': boolean } {
@@ -88,7 +93,7 @@ export class MarathonScheduleListComponent implements OnChanges, OnInit {
     if (!this.currentRun || !this.runs) {
       return false;
     }
-    const currentIndex = this.runs.findIndex(r => r.id === this.currentRun.id);
+    const currentIndex = this.runs.findIndex(r => r.id === this.currentRun?.id);
     const runIndex = this.runs.findIndex(r => r.id === run.id);
     return runIndex >= 0 && currentIndex >= 0 && runIndex < currentIndex;
   }

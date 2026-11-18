@@ -52,7 +52,7 @@
                         #incentiveName="ngModel">
                       <p class="help is-pulled-right">{{incentive.name?.length}}/50</p>
                     </div>
-                    @if (incentiveName.invalid) {
+                    @if (incentiveName.invalid && incentiveName.errors) {
                       <div>
                         @if (incentiveName.errors.required) {
                           <p class="help is-danger">
@@ -131,21 +131,21 @@
                 <td>
                   <div class="control is-flex">
                     <span class="mr-1">{{ 'marathon.incentives.management.donationGoal' | translate}}</span>
-                    <nwb-switch [(ngModel)]="incentive.bidWar" name="isBidWar{{i}}" [disabled]="incentive.locked">
+                    <app-nwb-switch [(ngModel)]="incentive.bidWar" name="isBidWar{{i}}" [disabled]="incentive.locked">
                       <span>{{ 'marathon.incentives.management.bidWar' | translate}}</span>
-                    </nwb-switch>
+                    </app-nwb-switch>
                   </div>
                   @if (incentive.bidWar) {
                     <div class="control">
-                      <nwb-switch [(ngModel)]="incentive.openBid" name="openBid{{i}}" [disabled]="incentive.locked">
+                      <app-nwb-switch [(ngModel)]="incentive.openBid" name="openBid{{i}}" [disabled]="incentive.locked">
                         <span>{{ 'marathon.incentives.management.openBid' | translate}}</span>
-                      </nwb-switch>
+                      </app-nwb-switch>
                     </div>
                   }
                 </td>
                 <td>
-                  <nwb-switch [(ngModel)]="incentive.locked" name="isLocked{{i}}">
-                  </nwb-switch>
+                  <app-nwb-switch [(ngModel)]="incentive.locked" name="isLocked{{i}}">
+                  </app-nwb-switch>
                 </td>
                 <td>
                   @if (incentive.bidWar) {
@@ -177,7 +177,7 @@
                             #bidName="ngModel">
                           <p class="help is-pulled-right">{{bid.name?.length}}/50</p>
                         </div>
-                        @if (bidName.invalid) {
+                        @if (bidName.invalid && bidName.errors) {
                           <div>
                             @if (bidName.errors.required) {
                               <p class="help is-danger">
@@ -215,8 +215,8 @@
                     <td>
                       @if (!bid.approved) {
                         <a (click)="bid.approved = true" (keyup.enter)="bid.approved = true" class="mr-1" tabindex="0"
-                          [nwbToolTip]="'marathon.incentives.management.approveBid' | translate" [nwbToolTipIsMultiline]="true"
-                          nwbToolTipPosition="left" aria-label="Approve bid">
+                           [nwbToolTip]="'marathon.incentives.management.approveBid' | translate" [nwbToolTipIsMultiline]="true"
+                           nwbToolTipPosition="left" aria-label="Approve bid">
                           <fa-icon [icon]="faCheck"></fa-icon>
                         </a>
                       }

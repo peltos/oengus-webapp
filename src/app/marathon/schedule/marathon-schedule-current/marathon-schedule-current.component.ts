@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -9,22 +9,24 @@ import { SimpleMdComponent } from '../../../components/simple-md/simple-md.compo
 import { UserLinkComponent } from '../../../elements/user-link/user-link.component';
 
 @Component({
-    selector: 'app-marathon-schedule-current',
-    templateUrl: './marathon-schedule-current.component.html',
-    styleUrls: ['./marathon-schedule-current.component.scss'],
-    imports: [
-        CommonModule,
-        RouterModule,
-        TranslateModule,
-        LocalizeRouterModule,
-        SimpleMdComponent,
-        UserLinkComponent,
-    ]
+  selector: 'app-marathon-schedule-current',
+  templateUrl: './marathon-schedule-current.component.html',
+  styleUrls: ['./marathon-schedule-current.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    RouterModule,
+    TranslateModule,
+    LocalizeRouterModule,
+    SimpleMdComponent,
+    UserLinkComponent,
+  ],
 })
 export class MarathonScheduleCurrentComponent {
   private temporal = inject(TemporalServiceService);
 
   @Input() isNext = false;
+  // @ts-expect-error meh.
   @Input() ticker: V2ScheduleLine;
 
   get messageClass(): string {
@@ -40,7 +42,11 @@ export class MarathonScheduleCurrentComponent {
   }
 
   get messageHeaderArgs(): { duration?: string } {
-    return this.isNext ? { duration: this.temporal.distance.format(this.ticker?.date ?? new Date()) } : { };
+    return this.isNext ? {
+        duration:
+          this.temporal.distance.format(this.ticker?.date ?? this.temporal.now),
+      }
+      : {};
   }
 
 }

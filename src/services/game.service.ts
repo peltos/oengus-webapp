@@ -1,9 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { NwbAlertService } from '@oengus/ng-wizi-bulma';
 import { TranslateService } from '@ngx-translate/core';
-import moment from 'moment-timezone';
-import {BaseService} from './BaseService';
+import { BaseService } from './BaseService';
+import { TemporalServiceService } from './termporal/temporal-service.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,10 +11,11 @@ import {BaseService} from './BaseService';
 export class GameService extends BaseService {
   private http = inject(HttpClient);
   private translateService = inject(TranslateService);
+  private temporalService = inject(TemporalServiceService);
 
 
   constructor() {
-    const toastr = inject(NwbAlertService);
+    const toastr = inject(NotificationService);
 
     super(toastr, 'marathons');
   }
@@ -22,7 +23,7 @@ export class GameService extends BaseService {
   // Cannot just return url, needs auth
   exportAllForMarathon(marathonId: string) {
     const exportUrl = this.url(`${marathonId}/submissions/export?locale=${
-      localStorage.getItem('language')}&zoneId=${moment.tz.guess()}`);
+      localStorage.getItem('language')}&zoneId=${this.temporalService.timeZone.timeZone}`);
     this.http.get(exportUrl, {responseType: 'text'})
       .subscribe(response => {
           const blob = new Blob([response], {type: 'text/csv'});

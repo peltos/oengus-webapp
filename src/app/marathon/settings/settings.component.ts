@@ -1,55 +1,53 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
 import { MarathonSettingsWithHelpfulProps } from '../../../model/marathon';
 import { MarathonService } from '../../../services/marathon.service';
 import { UserService } from '../../../services/user.service';
 import { cloneDeep } from 'lodash';
 import { DurationService } from '../../../services/duration.service';
-import moment from 'moment';
 import { faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { Question } from '../../../model/question';
+import { Question, QuestionType } from '../../../model/question';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { TranslateService } from '@ngx-translate/core';
-import { NwbAlertConfig, NwbAlertService } from '@oengus/ng-wizi-bulma';
 import { UserProfile } from '../../../model/user-profile';
 import { GeneralSettingsComponent } from './general-settings/general-settings.component';
 import { DiscordSettingsComponent } from './discord-settings/discord-settings.component';
 import { SubmissionSettingsComponent } from './submission-settings/submission-settings.component';
-import { IncentiveSettingsComponent } from './incentive-settings/incentive-settings.component';
+import { NotificationService } from '../../../services/notification.service';
+import { NwbSwitchComponent } from '../../components/wizi/switch/switch.component';
 
 @Component({
     selector: 'app-settings',
     templateUrl: './settings.component.html',
     styleUrls: ['./settings.component.scss'],
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        FontAwesomeModule,
-        NwbSwitchModule,
-        GeneralSettingsComponent,
-        DiscordSettingsComponent,
-        SubmissionSettingsComponent,
-        IncentiveSettingsComponent,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    FontAwesomeModule,
+    GeneralSettingsComponent,
+    DiscordSettingsComponent,
+    SubmissionSettingsComponent,
+    NwbSwitchComponent,
+  ],
 })
 export class SettingsComponent implements OnInit {
   marathonService = inject(MarathonService);
   userService = inject(UserService);
   private activatedRoute = inject(ActivatedRoute);
   private translateService = inject(TranslateService);
-  private toastr = inject(NwbAlertService);
+  private toastr = inject(NotificationService);
 
 
-  private marathonId: string;
+  private marathonId = '';
+  // @ts-expect-error meh.
   public settings: MarathonSettingsWithHelpfulProps;
-  public questions: Question[];
+  public questions: Question[] = [];
   public moderators: UserProfile[] = [];
   public loading = false;
 
@@ -57,13 +55,13 @@ export class SettingsComponent implements OnInit {
 
   public deleteConfirm = false;
   public updateStartTime = false;
-  public deleteShortname: string;
+  public deleteShortname = '';
 
   public faTimes = faTimes;
   public faPlus = faPlus;
 
-  public submissionsQuestions: Question[];
-  public donationsQuestions: Question[];
+  public submissionsQuestions: Question[] = [];
+  public donationsQuestions: Question[] = [];
 
   public settingsValid = true;
 
@@ -102,7 +100,7 @@ export class SettingsComponent implements OnInit {
     }
 
     this.loading = true;
-    this.settings.defaultSetupTime = moment.duration(this.settings.defaultSetupTimeHuman).toISOString();
+    this.settings.defaultSetupTime = DurationService.toIso(this.settings.defaultSetupTimeHuman);
 
     this.questions = [];
     this.questions = this.questions.concat(this.submissionsQuestions);
@@ -116,31 +114,17 @@ export class SettingsComponent implements OnInit {
         await firstValueFrom(this.marathonService.updateModerators(this.marathonId, this.moderators.map(it => it.id)));
       }
 
+      // @ts-expect-error meh.
       this.marathonService.marathon = {
         ...this.marathonService.marathon,
         ...updatedSettings,
       };
 
-      this.translateService.get('alert.marathon.update.success').subscribe((res: string) => {
-        const alertConfig: NwbAlertConfig = {
-          message: res,
-          duration: 3000,
-          position: 'is-right',
-          color: 'is-success'
-        };
-
-        return this.toastr.open(alertConfig);
-      });
-    } catch (e) {
+      return this.toastr.toast('alert.marathon.update.success');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
       this.translateService.get('alert.marathon.update.error').subscribe((res: string) => {
-        const alertConfig: NwbAlertConfig = {
-          message: `${res}\n${e.message}`,
-          duration: 3000,
-          position: 'is-right',
-          color: 'is-warning'
-        };
-
-        return this.toastr.open(alertConfig);
+        return this.toastr.toastRaw(`${res}\n${e.message}`, 5000, 'warning');
       });
     } finally {
       this.loading = false;
@@ -151,7 +135,7 @@ export class SettingsComponent implements OnInit {
     this.settingsValid = isValid;
   }
 
-  addQuestion({ questionType }: { questionType: string }) {
+  addQuestion({ questionType }: { questionType: QuestionType }) {
     const question: Question = {
       description: '', fieldType: '', id: 0, label: '', options: [], position: 0, required: false, type: questionType
     };

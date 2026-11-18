@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Marathon } from '../../../../model/marathon';
 import { SidebarOverviewComponent } from '../../../components/marathon-sidebar-overview/sidebar-overview.component';
@@ -10,6 +10,7 @@ import { SidebarModeratorsComponent } from '../sidebar-moderators/sidebar-modera
     selector: 'app-sidebar',
     templateUrl: './sidebar.component.html',
     styleUrls: ['./sidebar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         SidebarOverviewComponent,
@@ -19,8 +20,9 @@ import { SidebarModeratorsComponent } from '../sidebar-moderators/sidebar-modera
     ]
 })
 export class SidebarComponent {
-  @Input() isAdmin: boolean;
+  @Input() isAdmin = false;
   @Input() collapsed = false;
+  // @ts-expect-error meh.
   @Input() marathon: Marathon;
   @Output() toggleSidebar = new EventEmitter<boolean>();
 

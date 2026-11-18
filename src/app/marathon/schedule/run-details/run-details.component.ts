@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -11,6 +11,7 @@ import { ComponentsModule } from '../../../components/components.module';
     selector: 'app-run-details',
     templateUrl: './run-details.component.html',
     styleUrls: ['./run-details.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         RouterModule,
@@ -21,6 +22,7 @@ import { ComponentsModule } from '../../../components/components.module';
     ]
 })
 export class RunDetailsComponent {
+  // @ts-expect-error meh.
   @Input() run: V2ScheduleLine;
 
   get titleText(): string | null {

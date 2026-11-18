@@ -1,10 +1,11 @@
-import { Component, ElementRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-element-table',
     templateUrl: './element-table.component.html',
     styleUrls: ['./element-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
     ]
@@ -12,6 +13,7 @@ import { CommonModule } from '@angular/common';
 export class ElementTableComponent implements OnChanges {
   private elem = inject(ElementRef);
 
+  // @ts-expect-error meh.
   @Input() isDivided: boolean;
 
   ngOnChanges(changes: SimpleChanges): void {

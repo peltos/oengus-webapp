@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -20,6 +20,7 @@ import { DirectivesModule } from '../../../directives/directives.module';
     DirectivesModule,
   ],
   templateUrl: './category-editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './category-editor.component.scss'
 })
 export class CategoryEditorComponent implements OnInit, OnChanges {
@@ -29,7 +30,9 @@ export class CategoryEditorComponent implements OnInit, OnChanges {
   protected readonly saveIcon = faFloppyDisk;
   protected readonly cancelIcon = faCancel;
 
+  // @ts-expect-error meh.
   @Input() gameId: number;
+  // @ts-expect-error meh.
   @Input('category') inputCategory: SavedCategory;
   @Input('gameIndex') i = 0;
   @Input('index') j = 0;
@@ -40,6 +43,7 @@ export class CategoryEditorComponent implements OnInit, OnChanges {
   editing = false;
   loading = false;
 
+  // @ts-expect-error meh.
   protected category: SavedCategory;
 
   ngOnInit() {

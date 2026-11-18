@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -6,7 +6,6 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { AutocompleteLibModule } from 'angular-ng-autocomplete';
 import { V2ScheduleLine } from '../../../../../../model/schedule-line';
 import { DurationService } from '../../../../../../services/duration.service';
-import moment from 'moment-timezone';
 import { UserProfile } from '../../../../../../model/user-profile';
 import { MAX_NAME_LENGTH } from '../../../../../../model/user';
 import DOMPurify from 'dompurify';
@@ -21,6 +20,7 @@ type UserSearchType = { username: string; profile: null; isCustom: true} |  { us
     selector: 'app-normal-run-editor',
     templateUrl: './normal-run-editor.component.html',
     styleUrls: ['./normal-run-editor.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         FormsModule,
@@ -36,12 +36,15 @@ export class NormalRunEditorComponent implements OnInit {
   iconTimes = faTimes;
   userSearch: Record<string, UserSearchType[]> = {};
 
+  // @ts-expect-error meh.
   @Input() line: V2ScheduleLine;
+  // @ts-expect-error meh.
   @Input() i: number;
   @Output() loadAvailabilities = new EventEmitter<number>();
   @Output() estimateChanged = new EventEmitter<string>();
   @Output() setupTimeChanged = new EventEmitter<string>();
 
+  // @ts-expect-error meh.
   @ViewChild('autocompleteComponent') searchBox: AutocompleteComponent;
 
   setupTimeHuman = '00:00:00';
@@ -53,12 +56,12 @@ export class NormalRunEditorComponent implements OnInit {
   }
 
   onSetupTimeBlur(): void {
-    this.line.setupTime = moment.duration(this.setupTimeHuman).toISOString();
+    this.line.setupTime = DurationService.toIso(this.setupTimeHuman);
     this.setupTimeChanged.emit(this.line.setupTime);
   }
 
   onEstimateBlur(): void {
-    this.line.estimate = moment.duration(this.estimateHuman).toISOString();
+    this.line.estimate = DurationService.toIso(this.estimateHuman);
     this.estimateChanged.emit(this.line.estimate);
   }
 

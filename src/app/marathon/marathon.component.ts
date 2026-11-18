@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterOutlet } from '@angular/router';
 import { UserService } from '../../services/user.service';
@@ -12,6 +12,7 @@ import { SidebarComponent } from './layout/sidebar/sidebar.component';
     selector: 'app-marathon',
     templateUrl: './marathon.component.html',
     styleUrls: ['./marathon.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         RouterOutlet,
@@ -32,6 +33,7 @@ export class MarathonComponent implements OnInit {
 
   constructor() {
     if (!this.marathonService.marathon || this.marathonService.marathon.id !== this.route.snapshot.data.marathon.id) {
+      // @ts-expect-error meh.
       delete this.marathonService.marathon;
       this.marathonService.marathon = {...this.route.snapshot.data.marathon};
     }
@@ -50,7 +52,8 @@ export class MarathonComponent implements OnInit {
     this.collapsed = newCollapsed;
   }
 
-  marathonRouteActivate(component) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  marathonRouteActivate(component: any) {
     if (Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(component), 'title')) {
       this.titleService.setSubTitle(component.title);
     } else {

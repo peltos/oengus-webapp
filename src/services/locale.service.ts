@@ -1,5 +1,4 @@
 import { Injectable, inject } from '@angular/core';
-import moment from 'moment-timezone';
 import { TranslateService } from '@ngx-translate/core';
 import { TemporalServiceService } from './termporal/temporal-service.service';
 import { DateTimeAdapter } from '@oengus/angular-datetime-picker';
@@ -28,7 +27,8 @@ import isoLang from '../assets/languages.json';
 import { LocalizeRouterService } from '@oengusio/ngx-translate-router';
 
 // removed languages have none to no translations
-export const availableLocales = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const availableLocales: Record<string, any> = {
   'br': localeBr,
   'ca': localeCa,
   'cy': localeCy,
@@ -62,7 +62,7 @@ export class LocaleService {
   private dateTimeAdapter = inject<DateTimeAdapter<unknown>>(DateTimeAdapter);
   private temporal = inject(TemporalServiceService);
 
-  public language = localStorage.getItem('language') ? localStorage.getItem('language') : navigator.language.split('-')[0];
+  public language = localStorage.getItem('language') ?? navigator.language.split('-')[0] as string;
 
   get languagesJson(): Record<string, { name: string; nativeName: string }> {
     return isoLang;
@@ -76,6 +76,12 @@ export class LocaleService {
     for (const lang of availableLocaleNames) {
       registerLocaleData(availableLocales[lang], lang);
     }
+
+    this.dateTimeAdapter.localeChanges.subscribe({
+      next (newVal) {
+        console.log(`DEBUG: Date time adapter language changed to ${newVal}`);
+      },
+    });
 
     const langFromUrl = this.translateRouter.parser.currentLang;
 
@@ -100,20 +106,7 @@ export class LocaleService {
     this.translateRouter.changeLanguage(language);
     this.temporal.changeLocale(language);
 
-    this.setMomentTimezone(language);
-
+    // TODO: this somehow does not seem to work?
     this.dateTimeAdapter.setLocale(language.split('_')[0]);
-  }
-
-  setMomentTimezone(language: string): void {
-    const date = new Date();
-
-    if (date.getMonth() === 3 && date.getDate() === 1 && date.getHours() >= 14 ) {
-      moment.locale('x-pseudo');
-    } else if (language === 'zh_Hant_HK') {
-      moment.locale('zh_hk');
-    } else {
-      moment.locale(language.split('_')[0].replace('en', 'en_GB'));
-    }
   }
 }

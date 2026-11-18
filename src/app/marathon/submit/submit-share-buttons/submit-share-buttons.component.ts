@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -11,6 +11,7 @@ import { ElementShareMastodonComponent } from '../../../elements/element-share-m
   selector: 'app-submit-share-buttons',
   templateUrl: './submit-share-buttons.component.html',
   styleUrl: './submit-share-buttons.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     TranslateModule,
@@ -26,6 +27,7 @@ export class SubmitShareButtonsComponent {
   protected localStorage = localStorage;
   protected shortDomain = environment.shortUrl;
 
+  // @ts-expect-error meh.
   @Input() gameNames: string;
 
   get marathonName() {

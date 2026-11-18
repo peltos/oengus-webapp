@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, NgZone, OnInit, inject } from '@angular/core';
+import { Component, NgZone, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -18,20 +18,25 @@ import { DonationIncentiveLink } from '../../../model/donation-incentive-link';
 import { Bid } from '../../../model/bid';
 import { MonetaryAmountComponent } from '../../oengus-common/monetary-amount/monetary-amount.component';
 import { DirectivesModule } from '../../directives/directives.module';
+import { OengusMdComponent } from '../../components/oengus-md/oengus-md.component';
+import { NwbSwitchComponent } from '../../components/wizi/switch/switch.component';
 
 @Component({
     selector: 'app-donate',
     templateUrl: './donate.component.html',
     styleUrls: ['./donate.component.scss'],
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        RouterModule,
-        FontAwesomeModule,
-        MonetaryAmountComponent,
-        DirectivesModule,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    RouterModule,
+    FontAwesomeModule,
+    MonetaryAmountComponent,
+    DirectivesModule,
+    OengusMdComponent,
+    NwbSwitchComponent,
+  ],
 })
 export class DonateComponent implements OnInit {
   readonly title = 'Donate';
@@ -138,7 +143,7 @@ export class DonateComponent implements OnInit {
           }, reject);
         });
       },
-      authorizeOnServer: async (data) => {
+      authorizeOnServer: async (data: any) => {
         this.zone.run(() => {
           this.donationService.validate(this.marathonService.marathon.id, data.orderID).add(() => {
             this.loading = false;
@@ -159,14 +164,14 @@ export class DonateComponent implements OnInit {
       onApprove: () => {
         this.loading = true;
       },
-      onCancel: (data) => {
+      onCancel: (data: any) => {
         this.zone.run(() => {
           this.donationService.cancel(this.marathonService.marathon.id, data.orderID).subscribe(() => {
             this.loading = false;
           });
         });
       },
-      onShippingChange: (data, actions) => {
+      onShippingChange: (data: any, actions: any) => {
         // https://github.com/paypal/paypal-checkout-components/issues/1521
         return actions.resolve();
       }

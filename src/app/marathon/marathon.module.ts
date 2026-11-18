@@ -4,8 +4,7 @@ import { MarathonComponent } from './marathon.component';
 import { HomeComponent } from './home/home.component';
 import { NewMarathonComponent } from './new-marathon/new-marathon.component';
 import { FormsModule } from '@angular/forms';
-import { OwlDateTimeModule, OwlNativeDateTimeModule } from '@oengus/angular-datetime-picker';
-import { NwbCommonModule, NwbEditInPlaceModule, NwbPaginatorModule, NwbSwitchModule } from '@oengus/ng-wizi-bulma';
+import { OwlDateTimeModule, OwlTemporalDateTimeModule } from '@oengus/angular-datetime-picker';
 import { DirectivesModule } from '../directives/directives.module';
 import { canActivateMarathonSettingsGuard } from '../guards/can-activate-marathon-settings-guard.service';
 import { MarathonResolver } from '../resolvers/marathon-resolver';
@@ -209,7 +208,7 @@ const marathonRoutes: Routes = [
         },
         canActivate: [
           isEmailVerifiedGuardGuard,
-          (route) => inject(CanActivateMarathonIncentivesGuard).canActivate(route)
+          () => inject(CanActivateMarathonIncentivesGuard).canActivate()
 
         ]
       },
@@ -227,7 +226,7 @@ const marathonRoutes: Routes = [
         canActivate: [
           isEmailVerifiedGuardGuard,
           canActivateMarathonSettingsGuard,
-          (route) => inject(CanActivateMarathonIncentivesGuard).canActivate(route),
+          () => inject(CanActivateMarathonIncentivesGuard).canActivate(),
           canActivateMarathonActiveGuard,
         ]
       },
@@ -270,16 +269,12 @@ const marathonRoutes: Routes = [
     LocalizeRouterModule.forChild(marathonRoutes),
     FormsModule,
     OwlDateTimeModule,
-    OwlNativeDateTimeModule,
-    NwbSwitchModule,
+    OwlTemporalDateTimeModule,
     DirectivesModule,
     FontAwesomeModule,
-    NwbCommonModule,
     AutocompleteLibModule,
     OengusCommonModule,
     DragDropModule,
-    NwbEditInPlaceModule,
-    NwbPaginatorModule,
     ButtonsModule,
     ElementModule,
     ComponentsModule,

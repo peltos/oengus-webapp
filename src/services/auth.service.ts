@@ -1,23 +1,20 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { NwbAlertService } from '@oengus/ng-wizi-bulma';
-import { Router } from '@angular/router';
 import { firstValueFrom, Observable } from 'rxjs';
 import { BaseService } from './BaseService';
 import { InitMFADto, LoginDetails, LoginResponse, OauthLoginDetails } from '../model/auth';
 import { environment } from '../environments/environment';
 import { SignupDto, SignupResponseDto } from '../model/dto/signup-dto';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService extends BaseService {
   private http = inject(HttpClient);
-  private router = inject(Router);
-
 
   constructor() {
-    const toastr = inject(NwbAlertService);
+    const toastr = inject(NotificationService);
 
     super(toastr, 'auth');
   }
@@ -122,7 +119,7 @@ export class AuthService extends BaseService {
   }
 
   get token(): string {
-    return localStorage.getItem('token');
+    return localStorage.getItem('token') ?? '';
   }
 
   get tokenExpirationDate(): Date {

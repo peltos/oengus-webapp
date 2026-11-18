@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MarkdownService } from '../../../services/markdown.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -7,6 +7,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     selector: 'app-oengus-md',
     templateUrl: './oengus-md.component.html',
     styleUrls: ['./oengus-md.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
     ]
@@ -15,7 +16,7 @@ export class OengusMdComponent implements OnInit {
   private readonly markdown = inject(MarkdownService);
   private readonly sanitizer = inject(DomSanitizer);
 
-  @Input() public data: string;
+  @Input() public data = '';
   @Input() padTop = false;
 
   trustedContent: SafeHtml = '';

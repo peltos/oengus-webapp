@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { CommonModule, KeyValuePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { LocalizeRouterModule } from '@oengusio/ngx-translate-router';
@@ -7,6 +7,7 @@ import { HomepageMetadata } from '../../../model/homepage-metadata';
 import { getRowParity } from '../../../assets/table';
 import { Marathon } from '../../../model/marathon';
 import { ElementModule } from '../../elements/elements.module';
+import { TemporalServiceService } from '../../../services/termporal/temporal-service.service';
 
 interface HomepageListData {
   key: keyof HomepageMetadata;
@@ -16,13 +17,18 @@ interface HomepageListData {
   headerClass: string;
 }
 
+interface TranslationItem {
+  index: number;
+  date: Temporal.ZonedDateTime;
+}
+
 @Component({
     selector: 'app-homepage-marathons',
     templateUrl: './marathons.component.html',
     styleUrls: ['./marathons.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
-        KeyValuePipe,
         RouterModule,
         TranslateModule,
         LocalizeRouterModule,
@@ -30,7 +36,9 @@ interface HomepageListData {
     ]
 })
 export class MarathonsComponent {
+  private temporal = inject(TemporalServiceService);
 
+  // @ts-expect-error meh.
   @Input() homepageMarathons: HomepageMetadata;
 
   marathonsLists: HomepageListData[] = [
@@ -66,29 +74,56 @@ export class MarathonsComponent {
 
   getRowParity = getRowParity;
 
-  private now = new Date();
+  private now = this.temporal.now;
 
-  private keyCache: Record<string, Record<number, Date>> = {};
+  private keyCache: Record<string, TranslationItem> = {};
 
   shouldRenderList(key: keyof HomepageMetadata): boolean {
     return (this.homepageMarathons?.[key]?.length ?? 0) > 0;
   }
 
-  getTranslationData(marathon: Marathon, keys: (keyof Marathon)[]): Record<number, Date> {
+  /*getTranslationData(marathon: Marathon, keys: (keyof Marathon)[]): Record<number, Temporal.ZonedDateTime> {
     if (keys.length === 1) {
       return {
-        0: marathon[keys[0]] as Date
+        0: marathon[keys[0]] as Temporal.ZonedDateTime
       };
     }
 
     if (!this.keyCache[marathon.id]) {
-      const found = keys.map(key => ({key, date: marathon[key] as Date}))
-        .map(({key, date: strDate}) => ({key, date: new Date(strDate)}))
-        .filter(({date}) => keys.length === 1 ? date : date && date > this.now)
-        .find(item => item.date);
+      const found = keys.map(key => ({key, date: marathon[key] as Temporal.ZonedDateTime}))
+        .filter(({date}) => keys.length === 1 ? date : date && Temporal.ZonedDateTime.compare(date, this.now) === 1)
+        .find(item => item.date) as {
+        key: keyof Marathon
+        date: Temporal.ZonedDateTime
+      };
 
       this.keyCache[marathon.id] = {
         [keys.indexOf(found.key)]: found.date,
+      };
+    }
+
+    return this.keyCache[marathon.id];
+  }*/
+
+  getTranslationData(marathon: Marathon, keys: (keyof Marathon)[]): TranslationItem {
+    if (keys.length === 1) {
+      return {
+        index: 0,
+        date: marathon[keys[0]] as Temporal.ZonedDateTime,
+      };
+    }
+
+    if (!this.keyCache[marathon.id]) {
+      const found = keys.map(key => ({key, date: marathon[key] as Temporal.ZonedDateTime}))
+        .filter(({date}) => keys.length === 1 ? date : date && Temporal.ZonedDateTime.compare(date, this.now) === 1)
+        .find(item => item.date) as {
+        key: keyof Marathon
+        date: Temporal.ZonedDateTime
+      };
+
+      this.keyCache[marathon.id] = {
+        index: keys.indexOf(found.key),
+        date: found.date,
       };
     }
 

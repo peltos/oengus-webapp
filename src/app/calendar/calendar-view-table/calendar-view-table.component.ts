@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Marathon } from 'src/model/marathon';
@@ -15,6 +15,7 @@ interface CalendarType {
     selector: 'app-calendar-view-table',
     templateUrl: './calendar-view-table.component.html',
     styleUrls: ['./calendar-view-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         TranslateModule,
@@ -23,13 +24,13 @@ interface CalendarType {
     ]
 })
 export class CalendarViewTableComponent implements OnInit, OnChanges {
-  @Input() year: number;
-  @Input() month: number;
+  @Input() year = -1;
+  @Input() month = -1;
   @Input() marathons: Marathon[] = [];
 
   // TODO: HACK
   //  ngFor calls this.dailyCalendars multiple times, breaking routerLinkActive (angular bug?).
-  realDaylyCallendars: CalendarType[];
+  realDaylyCallendars: CalendarType[] = [];
 
   ngOnInit(): void {
     this.realDaylyCallendars = this.generateDailyCalendars(this.marathons);
@@ -68,7 +69,9 @@ export class CalendarViewTableComponent implements OnInit, OnChanges {
   getMarathons(day: number, marathonList: Marathon[]): Marathon[]|undefined {
     const dayStart = new Date(this.year, this.month - 1, day);
     const dayEnd = new Date(this.year, this.month - 1, day + 1);
-    return marathonList.filter(marathon => new Date(marathon.endDate) > dayStart && new Date(marathon.startDate) < dayEnd);
+    return marathonList.filter(
+      marathon => new Date(marathon.endDate.epochMilliseconds) > dayStart && new Date(marathon.startDate.epochMilliseconds) < dayEnd,
+    );
   }
 
   private generateDailyCalendars(marathonList: Marathon[]): CalendarType[] {

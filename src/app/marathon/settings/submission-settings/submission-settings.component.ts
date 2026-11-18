@@ -1,36 +1,40 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
 import { faBars, faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { MarathonService } from '../../../../services/marathon.service';
 import { MarathonSettings } from '../../../../model/marathon';
 import { Question } from '../../../../model/question';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { DirectivesModule } from '../../../directives/directives.module';
+import { NwbSwitchComponent } from '../../../components/wizi/switch/switch.component';
 
 @Component({
     selector: 'app-marathon-submission-settings',
     templateUrl: './submission-settings.component.html',
     styleUrls: ['./submission-settings.component.scss'],
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        DragDropModule,
-        FontAwesomeModule,
-        NwbSwitchModule,
-        DirectivesModule,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    DragDropModule,
+    FontAwesomeModule,
+    DirectivesModule,
+    NwbSwitchComponent,
+  ],
 })
 export class SubmissionSettingsComponent {
   marathonService = inject(MarathonService);
 
+  // @ts-expect-error meh.
   @Input() public settings: MarathonSettings;
+  // @ts-expect-error meh.
   @Input() public submissionsQuestions: Question[];
+  // @ts-expect-error meh.
   @Input() public disabled: boolean;
 
   @Output() public stateUpdate = new EventEmitter<boolean>();
@@ -64,16 +68,18 @@ export class SubmissionSettingsComponent {
           this.settings.discordGuildId = id;
           this.settings.discordGuildName = name;
         })
-        .add(() => this.loadingDiscordCheck = false);
+        .add(() => {
+          this.loadingDiscordCheck = false;
+        });
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmitsOpenChanged(event: any): void {
-    const now = new Date();
-    const closeDate = new Date(this.settings.submissionsEndDate);
+    const now = Temporal.Now.instant();
+    const closeDate = this.settings.submissionsEndDate?.toInstant();
 
-    if (!this.settings.submissionsOpen && (Boolean(this.settings.submissionsEndDate) && now > closeDate)) {
+    if (!this.settings.submissionsOpen && (closeDate && Temporal.Instant.compare(closeDate, now) === 1)) {
       const conf = confirm('Re-opening the submissions will clear the automatic open and close times, do you want to continue?');
 
       if (conf) {

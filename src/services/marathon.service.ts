@@ -1,14 +1,12 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Marathon, MarathonSettings } from '../model/marathon';
-import { NwbAlertService } from '@oengus/ng-wizi-bulma';
-import { Observable, Subscription } from 'rxjs';
+import { Marathon, MarathonRaw, MarathonSettings, MarathonSettingsRawApi } from '../model/marathon';
+import { Observable, OperatorFunction, Subscription } from 'rxjs';
 import { ValidationErrors } from '@angular/forms';
 import { UserService } from './user.service';
-import { HomepageMetadata } from '../model/homepage-metadata';
+import { HomepageMetadata, HomepageMetaDataRaw } from '../model/homepage-metadata';
 import { TranslateService } from '@ngx-translate/core';
-import moment from 'moment-timezone';
 import { SelfUser, User } from '../model/user';
 import { BaseService } from './BaseService';
 import { parseMastodonUrl } from '../utils/helpers';
@@ -16,6 +14,8 @@ import { Question } from '../model/question';
 import { BooleanStatusDto, DataListDto } from '../model/dto/base-dtos';
 import { map } from 'rxjs/operators';
 import { UserProfile } from '../model/user-profile';
+import { TemporalServiceService } from './termporal/temporal-service.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({
   providedIn: 'root',
@@ -25,8 +25,9 @@ export class MarathonService extends BaseService {
   private router = inject(Router);
   private userService = inject(UserService);
   private translateService = inject(TranslateService);
+  private temporalService = inject(TemporalServiceService);
 
-  private _marathon: Marathon;
+  private _marathon: Marathon = new Marathon();
 
   get marathon(): Marathon {
     return this._marathon;
@@ -45,7 +46,7 @@ export class MarathonService extends BaseService {
   }
 
   constructor() {
-    const toastr = inject(NwbAlertService);
+    const toastr = inject(NotificationService);
 
     super(toastr, 'marathons');
   }
@@ -65,14 +66,22 @@ export class MarathonService extends BaseService {
     });
   }
 
-  updateSettings(marathon: Partial<MarathonSettings> & { id: string }) {
-    return this.http.patch<MarathonSettings>(this.v2Url(`${marathon.id}/settings`), marathon);
+  updateSettings(marathon: Partial<MarathonSettings> & { id: string }): Observable<MarathonSettings> {
+    return this.http.patch<MarathonSettingsRawApi>(this.v2Url(`${marathon.id}/settings`), {
+      ...marathon,
+      startDate: marathon.startDate?.toInstant().toString(),
+      endDate: marathon.endDate?.toInstant().toString(),
+      submissionsStartDate: marathon.submissionsStartDate?.toInstant()?.toString(),
+      submissionsEndDate: marathon.submissionsEndDate?.toInstant()?.toString(),
+    }).pipe(
+      this.mapMarathonSettings(),
+    );
   }
 
   updateQuestions(marathonId: string, questions: Question[]): Observable<boolean> {
     return this.http.put<BooleanStatusDto>(
       this.v2Url(`${marathonId}/settings/questions`),
-      { questions }
+      {questions},
     )
       .pipe(map(x => x.status));
   }
@@ -80,7 +89,7 @@ export class MarathonService extends BaseService {
   updateModerators(marathonId: string, userIds: number[]): Observable<boolean> {
     return this.http.put<BooleanStatusDto>(
       this.v2Url(`${marathonId}/settings/moderators`),
-      { userIds }
+      {userIds},
     )
       .pipe(map(x => x.status));
   }
@@ -103,7 +112,7 @@ export class MarathonService extends BaseService {
   }
 
   find(name: string): Observable<Marathon> {
-    return this.http.get<Marathon>(this.url(`${name}`));
+    return this.http.get<MarathonRaw>(this.url(`${name}`)).pipe(map((m) => this.mapSingleMarathon(m)));
   }
 
   delete(name: string) {
@@ -120,7 +129,7 @@ export class MarathonService extends BaseService {
   }
 
   findHomepageMetadata(): Observable<HomepageMetadata> {
-    return this.http.get<HomepageMetadata>(this.v2Url('for-home'));
+    return this.http.get<HomepageMetaDataRaw>(this.v2Url('for-home')).pipe(this.mapHomepage());
   }
 
   findHomepageModerated(): Observable<{ marathons: Marathon[] }> {
@@ -131,13 +140,16 @@ export class MarathonService extends BaseService {
     const params = new HttpParams()
       .set('start', start.toISOString())
       .set('end', end.toISOString())
-      .set('zoneId', moment.tz.guess());
+      .set('zoneId', this.temporalService.timeZone.timeZone);
 
-    return this.http.get<Marathon[]>(this.url('forDates'), { params });
+    return this.http.get<MarathonRaw[]>(this.url('forDates'), {params})
+      .pipe(this.mapMarathons());
   }
 
   isArchived(marathon: Marathon = this._marathon): boolean {
-    return moment(marathon.endDate).isBefore(moment());
+    const endDate = this.temporalService.parseDate(marathon.endDate as unknown as string);
+
+    return Temporal.ZonedDateTime.compare(endDate, this.temporalService.now) === -1;
   }
 
   fetchDiscordInfo(marathon: MarathonSettings | Marathon): Observable<{ id: string, name: string }> {
@@ -154,7 +166,10 @@ export class MarathonService extends BaseService {
   }
 
   hasDstChange(): boolean {
-    return moment(this.marathon.startDate).isDST() !== moment(this.marathon.endDate).isDST();
+    const startDate = this.temporalService.parseDate(this.marathon.startDate as unknown as string);
+    const endDate = this.temporalService.parseDate(this.marathon.endDate as unknown as string);
+
+    return startDate.offset !== endDate.offset;
   }
 
   isWebhookOnline(marathonId: string, url: string): Observable<unknown> {
@@ -165,7 +180,9 @@ export class MarathonService extends BaseService {
   }
 
   loadSettings(marathonId: string): Observable<MarathonSettings> {
-    return this.http.get<MarathonSettings>(this.v2Url(`${marathonId}/settings`));
+    return this.http.get<MarathonSettingsRawApi>(this.v2Url(`${marathonId}/settings`)).pipe(
+      this.mapMarathonSettings(),
+    );
   }
 
   loadQuestions(marathonId: string): Observable<DataListDto<Question>> {
@@ -174,5 +191,42 @@ export class MarathonService extends BaseService {
 
   loadModerators(marathonId: string): Observable<DataListDto<UserProfile>> {
     return this.http.get<DataListDto<UserProfile>>(this.v2Url(`${marathonId}/settings/moderators`));
+  }
+
+  private mapMarathonSettings(): OperatorFunction<MarathonSettingsRawApi, MarathonSettings> {
+    return map((raw) => ({
+      ...raw,
+      startDate: this.temporalService.parseDate(raw.startDate),
+      endDate: this.temporalService.parseDate(raw.endDate),
+      // @ts-expect-error meh.
+      submissionsStartDate: this.temporalService.parseDate(raw.submissionsStartDate),
+      // @ts-expect-error meh.
+      submissionsEndDate: this.temporalService.parseDate(raw.submissionsEndDate),
+    }));
+  }
+
+  private mapMarathons(): OperatorFunction<MarathonRaw[], Marathon[]> {
+    return map(
+      (raw) => raw.map((marathon) => this.mapSingleMarathon(marathon)),
+    );
+  }
+
+  private mapHomepage(): OperatorFunction<HomepageMetaDataRaw, HomepageMetadata> {
+    return map((raw) => ({
+      live: raw.live.map((m) => this.mapSingleMarathon(m)),
+      next: raw.next.map((m) => this.mapSingleMarathon(m)),
+      open: raw.open.map((m) => this.mapSingleMarathon(m)),
+      moderated: [],
+    }));
+  }
+
+  private mapSingleMarathon(marathon: MarathonRaw): Marathon {
+    return {
+      ...marathon,
+      startDate: this.temporalService.parseDate(marathon.startDate),
+      endDate: this.temporalService.parseDate(marathon.endDate),
+      submissionsStartDate: this.temporalService.parseDate(marathon.submissionsStartDate),
+      submissionsEndDate: this.temporalService.parseDate(marathon.submissionsEndDate),
+    };
   }
 }

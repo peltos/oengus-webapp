@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -11,18 +11,21 @@ import { MarathonService } from '../../../services/marathon.service';
 import { faCheck, faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { Bid } from '../../../model/bid';
 import { ScheduleLine } from '../../../model/schedule-line';
-import { NwbAllModule } from '@oengus/ng-wizi-bulma';
+import { NwbSwitchComponent } from '../../components/wizi/switch/switch.component';
+import { NwbToolTipDirective } from '../../components/wizi/tooltip/tooltip.directive';
 
 @Component({
     selector: 'app-incentive-management',
     templateUrl: './incentive-management.component.html',
     styleUrls: ['./incentive-management.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
     TranslateModule,
     FontAwesomeModule,
-    NwbAllModule,
+    NwbSwitchComponent,
+    NwbToolTipDirective,
   ],
 })
 export class IncentiveManagementComponent {

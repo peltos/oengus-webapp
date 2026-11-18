@@ -1,30 +1,23 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { LocalizeRouterModule } from '@oengusio/ngx-translate-router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { OwlDateTimeModule, OwlNativeDateTimeModule } from '@oengus/angular-datetime-picker';
-import { NwbAllModule, NwbSwitchModule } from '@oengus/ng-wizi-bulma';
+import { DateTimeAdapter, OwlDateTimeModule } from '@oengus/angular-datetime-picker';
 import { AutocompleteLibModule } from 'angular-ng-autocomplete';
 import { SubmissionService } from '../../../services/submission.service';
-import { ActivatedRoute, Router } from '@angular/router';
 import { Submission } from '../../../model/submission';
 import { MarathonService } from '../../../services/marathon.service';
-import { faCheck, faClone, faPlus, faTimes, faCloudArrowUp } from '@fortawesome/free-solid-svg-icons';
+import { faClone, faCloudArrowUp, faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { Game } from '../../../model/game';
 import { Category } from '../../../model/category';
-import moment from 'moment-timezone';
 import { Availability } from '../../../model/availability';
 import { Answer } from '../../../model/answer';
 import { environment } from '../../../environments/environment';
-import { CategoryService } from '../../../services/category.service';
-import { NwbAlertConfig, NwbAlertService } from '@oengus/ng-wizi-bulma';
-import { TranslateService } from '@ngx-translate/core';
 import { UserService } from '../../../services/user.service';
 import { HttpClient } from '@angular/common/http';
-import { Location } from '@angular/common';
 import gameConsoles from '../../../assets/consoles.json';
 import { firstValueFrom } from 'rxjs';
 import { Opponent } from '../../../model/opponent';
@@ -37,11 +30,16 @@ import { SubmitMultiplayerJoinComponent } from './submit-multiplayer-join/submit
 import { OengusMdComponent } from '../../components/oengus-md/oengus-md.component';
 import { DirectivesModule } from '../../directives/directives.module';
 import { UserLinkComponent } from '../../elements/user-link/user-link.component';
+import { TemporalServiceService } from '../../../services/termporal/temporal-service.service';
+import { NotificationService } from '../../../services/notification.service';
+import { NwbSwitchComponent } from '../../components/wizi/switch/switch.component';
+import { NwbToolTipDirective } from '../../components/wizi/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-submit',
   templateUrl: './submit.component.html',
   styleUrls: ['./submit.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
@@ -50,8 +48,6 @@ import { UserLinkComponent } from '../../elements/user-link/user-link.component'
     LocalizeRouterModule,
     FontAwesomeModule,
     OwlDateTimeModule,
-    OwlNativeDateTimeModule,
-    NwbSwitchModule,
     AutocompleteLibModule,
     DirectivesModule,
     ImportRunDialogComponent,
@@ -59,8 +55,9 @@ import { UserLinkComponent } from '../../elements/user-link/user-link.component'
     SubmitShareButtonsComponent,
     SubmitMultiplayerJoinComponent,
     OengusMdComponent,
-    NwbAllModule,
     UserLinkComponent,
+    NwbSwitchComponent,
+    NwbToolTipDirective,
   ],
 })
 export class SubmitComponent {
@@ -72,7 +69,11 @@ export class SubmitComponent {
     if (this.route.snapshot.data.submission) {
       this.initSubmission(this.route.snapshot.data.submission);
     } else {
-      this.initSubmission(new Submission());
+      const newSubmission = new Submission();
+
+      newSubmission.user.id = userService.user.id;
+
+      this.initSubmission(newSubmission);
     }
 
     if (marathonService.marathon.submitsOpen) {
@@ -108,32 +109,33 @@ export class SubmitComponent {
   get marathonDiscord(): string {
     return `https://discord.gg/${this.marathonService.marathon.discord}`;
   }
+
   protected submissionService = inject(SubmissionService);
   protected marathonService = inject(MarathonService);
-  private categoryService = inject(CategoryService);
-  private translateService = inject(TranslateService);
   private userService = inject(UserService);
-  private toastr = inject(NwbAlertService);
+  private toastr = inject(NotificationService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private location = inject(Location);
   private router = inject(Router);
+  private temporalService = inject(TemporalServiceService);
 
-  protected submission: Submission;
-  protected faCheck = faCheck;
+
+  private dateTimeAdapter = inject<DateTimeAdapter<unknown>>(DateTimeAdapter);
+
+  protected submission = new Submission();
   protected faTimes = faTimes;
   protected faPlus = faPlus;
   protected faImport = faCloudArrowUp;
   protected faClone = faClone;
-  protected moment = moment;
-  protected timezone = moment.tz.guess();
+  protected timezone = this.temporalService.timeZone.timeZone;
   protected loading = false;
   protected localStorage = localStorage;
   protected possibleConsoles: string[] = gameConsoles;
   protected deleteConfirm = false;
   protected savedGames: SavedGame[] = [];
 
-  protected code: string;
+  protected code = '';
 
   protected isDiscordCheckLoading = false;
   private showDiscordRequirement = true;
@@ -145,9 +147,19 @@ export class SubmitComponent {
 
   readonly title = 'Submit';
 
-  private initSubmission(submission: Submission) {
-    delete this.submission;
-    this.submission = {...submission};
+  private initSubmission(submission: Submission | null) {
+    if (submission) {
+      this.submission = {...submission};
+    } else {
+      const newSubmission = new Submission();
+
+      console.log('[submit.component.ts] Fell through into second if');
+
+      newSubmission.user.id = this.userService.user.id;
+
+      this.submission = newSubmission;
+    }
+
     this.submission.games.forEach(game => {
       game.categories.forEach(category => {
         category.estimateHuman = DurationService.toHuman(category.estimate);
@@ -211,7 +223,7 @@ export class SubmitComponent {
     game.categories.push(new Category());
 
     // TODO: remove, for testing only
-
+    //
     // game.name = 'Portal';
     // game.console = 'PC';
     // game.ratio = '1:1';
@@ -231,43 +243,53 @@ export class SubmitComponent {
     this.submission.games[index].categories.push(new Category());
   }
 
-  minToAvailability(availability: Availability): Date {
+  minToAvailability(availability: Availability): Temporal.ZonedDateTime {
     if (availability.from) {
-      const fromDate = new Date(availability.from);
-
-      fromDate.setMinutes(fromDate.getMinutes() + 1);
-
-      return fromDate;
+      return availability.from.add(Temporal.Duration.from({ minutes: 1 }));
     }
 
     return this.marathonService.marathon.startDate;
   }
 
   addAvailability() {
-    this.submission.availabilities.push(new Availability());
+    this.submission.availabilities.push({
+      // @ts-expect-error code is fine.
+      from: null,
+      // @ts-expect-error code is fine.
+      to: null,
+      // @ts-expect-error code is fine.
+      username: null,
+    });
   }
 
   duplicateAvailabilityToNextDay(index: number) {
-    const endDate = this.marathonService.marathon.endDate;
+    const endDate = this.temporalService.parseDate(this.marathonService.marathon.endDate);
     const availability = {...this.submission.availabilities[index]};
-    const fromMoment = moment.tz(availability.from, this.timezone);
-    const toMoment = moment.tz(availability.to, this.timezone);
-    const duration = moment.duration(toMoment.diff(fromMoment));
-    let tmpFrom = moment.tz(availability.to, this.timezone);
+
+    const fromTemporal = this.temporalService.parseDate(availability.from);
+    const toTemporal = this.temporalService.parseDate(availability.to);
+    const duration = fromTemporal.until(toTemporal);
+    let tmpFrom = toTemporal;
 
     // only add one day if we're not in midnight on the to day
-    if (!(toMoment.hour() >= 0 && toMoment.hour() <= 5)) {
-      tmpFrom = tmpFrom.add(1, 'days');
+    if (!(toTemporal.hour >= 0 && toTemporal.hour <= 5)) {
+      tmpFrom = tmpFrom.add(Temporal.Duration.from({ days: 1 }));
     }
 
-    availability.from = tmpFrom.hour(fromMoment.hour())
-      .minute(fromMoment.minute())
-      .toDate();
+    // Clamp hours back down to the original from range as we switched the to and from around.
+    tmpFrom = tmpFrom.with({
+      hour: fromTemporal.hour,
+      minute: fromTemporal.minute,
+    });
 
-    availability.to = moment.tz(availability.from, this.timezone).add(duration).toDate();
+    availability.from = tmpFrom;
 
-    if (moment.tz(availability.to, this.timezone).isAfter(moment.tz(endDate, this.timezone))) {
-      availability.to = moment.tz(endDate, this.timezone).toDate();
+    const newToTemporal = tmpFrom.add(duration);
+    availability.to = newToTemporal;
+
+    // If avail is after end date set it to the end date
+    if (Temporal.ZonedDateTime.compare(newToTemporal, endDate) === 1) {
+      availability.to = endDate;
     }
 
     this.submission.availabilities.push(availability);
@@ -345,7 +367,9 @@ export class SubmitComponent {
   }
 
   deleteSubmission(marathonId: string, submissionId: number) {
-    this.submissionService.delete(marathonId, submissionId, () => this.router.navigate(['/marathon', this.marathonService.marathon.id]));
+    this.submissionService.delete(marathonId, submissionId, () => {
+      this.router.navigate(['/marathon', this.marathonService.marathon.id]);
+    });
   }
 
   async checkUserInDiscord() {
@@ -367,16 +391,7 @@ export class SubmitComponent {
       ));
 
       this.showDiscordRequirement = false;
-
-      this.translateService.get('alert.submit.DISCORD_VERIFIED').subscribe((res: string) => {
-        const alertConfig: NwbAlertConfig = {
-          message: res,
-          duration: 3000,
-          position: 'is-right',
-          color: 'is-success',
-        };
-        this.toastr.open(alertConfig);
-      });
+      this.toastr.toast('alert.submit.DISCORD_VERIFIED');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.log(error);
@@ -479,7 +494,7 @@ export class SubmitComponent {
     this.submission.games.push(game);
   }
 
-  private getSavedGameById(gameId: number): SavedGame | null {
+  private getSavedGameById(gameId: number): SavedGame | undefined | null {
     return this.savedGames.find((it) => it.id === gameId);
   }
 
@@ -507,7 +522,7 @@ export class SubmitComponent {
     };
   }
 
-  private findAlreadyInsertedGameByName(gameName: string): Game | null {
+  private findAlreadyInsertedGameByName(gameName: string): Game | undefined | null {
     return this.submission.games.find((it) => it.name.toLowerCase() === gameName.toLowerCase());
   }
 }

@@ -1,15 +1,15 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { V2ScheduleLine } from '../../../../../../model/schedule-line';
 import { DurationService } from '../../../../../../services/duration.service';
-import moment from 'moment-timezone';
 
 @Component({
     selector: 'app-setup-block-editor',
     templateUrl: './setup-block-editor.component.html',
     styleUrls: ['./setup-block-editor.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         FormsModule,
@@ -19,7 +19,9 @@ import moment from 'moment-timezone';
 export class SetupBlockEditorComponent implements OnInit {
   @Output() setupTimeChanged = new EventEmitter<string>();
 
+  // @ts-expect-error meh.
   @Input() line: V2ScheduleLine;
+  // @ts-expect-error meh.
   @Input() i: number;
 
   humanSetupTime = '00:00:00';
@@ -29,7 +31,7 @@ export class SetupBlockEditorComponent implements OnInit {
   }
 
   onSetupTimeBlur(): void {
-    this.line.setupTime = moment.duration(this.humanSetupTime).toISOString();
+    this.line.setupTime = DurationService.toIso(this.humanSetupTime);
     this.setupTimeChanged.emit(this.line.setupTime);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -13,6 +13,7 @@ import { UserLinkComponent } from '../../../elements/user-link/user-link.compone
   selector: 'app-submit-multiplayer-join',
   templateUrl: './submit-multiplayer-join.component.html',
   styleUrl: './submit-multiplayer-join.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
@@ -28,7 +29,7 @@ export class SubmitMultiplayerJoinComponent {
 
   code = '';
 
-  @Input() opponents: Opponent[];
+  @Input() opponents: Opponent[] = [];
 
   @Output() private addOpponent = new EventEmitter<Opponent>();
   @Output() private removeOpponent = new EventEmitter<number>();

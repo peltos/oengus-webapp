@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -17,33 +17,40 @@ import { SetupBlockEditorComponent } from './setup-block-editor/setup-block-edit
 import { NormalRunEditorComponent } from './normal-run-editor/normal-run-editor.component';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { FormsModule } from '@angular/forms';
+import {
+  ElementTemporalDatetimeComponent
+} from '../../../../elements/temporal/element-temporal-datetime/element-temporal-datetime.component';
 
 @Component({
     selector: 'app-schedule-table',
     templateUrl: './schedule-table.component.html',
     styleUrls: ['./schedule-table.component.scss'],
-    imports: [
-        CommonModule,
-        TranslateModule,
-        DragDropModule,
-        FontAwesomeModule,
-        FormsModule,
-        ElementTableComponent,
-        ElementTableRowComponent,
-        ElementTableCellComponent,
-        ScheduleEditRowComponent,
-        ElementTableDetailComponent,
-        SetupBlockEditorComponent,
-        NormalRunEditorComponent,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    TranslateModule,
+    DragDropModule,
+    FontAwesomeModule,
+    FormsModule,
+    ElementTableComponent,
+    ElementTableRowComponent,
+    ElementTableCellComponent,
+    ScheduleEditRowComponent,
+    ElementTableDetailComponent,
+    SetupBlockEditorComponent,
+    NormalRunEditorComponent,
+    ElementTemporalDatetimeComponent,
+  ],
 })
 export class ScheduleTableComponent {
   public getRowParity = getRowParity;
   iconBars = faBars;
 
   @Input() lines: V2ScheduleLine[] = [];
+  // @ts-expect-error meh.
   @Input() availabilities: AvailabilityResponse;
-  @Input() selectedAvailabilities: string[];
+  @Input() selectedAvailabilities: string[] = [];
+  // @ts-expect-error meh.
   @Input() showAllCustomData: boolean;
   @Output() moveToToDo = new EventEmitter<number>();
   @Output() delete = new EventEmitter<number>();
@@ -66,13 +73,13 @@ export class ScheduleTableComponent {
     }
 
     // Otherwise, only show when the day transitioned
-    const currentRun = new Date(this.lines[index].date);
+    const currentRun = this.lines[index].date;
     // We have an implicit index test for the index=0 case, so this is always safe
-    const previousRun = new Date(this.lines[index - 1].date);
+    const previousRun = this.lines[index - 1].date;
 
-    return currentRun.getDate() !== previousRun.getDate() ||
-      currentRun.getMonth() !== previousRun.getMonth() ||
-      currentRun.getFullYear() !== previousRun.getFullYear();
+    return currentRun.day !== previousRun.day ||
+      currentRun.month !== previousRun.month ||
+      currentRun.year !== previousRun.year;
   }
 
   deleteRow(linePosition: number): void {

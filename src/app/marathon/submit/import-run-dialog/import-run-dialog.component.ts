@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -10,6 +10,7 @@ import { ElementI18nComponent } from '../../../elements/element-i18n/element-i18
   selector: 'app-import-run-dialog',
   templateUrl: './import-run-dialog.component.html',
   styleUrl: './import-run-dialog.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
@@ -19,8 +20,8 @@ import { ElementI18nComponent } from '../../../elements/element-i18n/element-i18
 })
 export class ImportRunDialogComponent {
 
-  @Input() modalActive: boolean;
-  @Input() savedGames: SavedGame[];
+  @Input() modalActive = false;
+  @Input() savedGames: SavedGame[] = [];
 
   @Output() doImport = new EventEmitter<SavedCategory[]>();
   // eslint-disable-next-line @angular-eslint/no-output-native

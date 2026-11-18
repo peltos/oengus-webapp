@@ -1,47 +1,48 @@
-import { Component, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
 import { ActivatedRoute } from '@angular/router';
 import { ScheduleInfo } from '../../../../model/schedule';
 import { environment } from '../../../../environments/environment';
 import { ScheduleService } from '../../../../services/schedule.service';
 import { firstValueFrom } from 'rxjs';
 import { LineRunner, V2ScheduleLine } from '../../../../model/schedule-line';
-import { NwbAlertConfig, NwbAlertService } from '@oengus/ng-wizi-bulma';
 import { SubmissionService } from '../../../../services/submission.service';
 import { SelectionService } from '../../../../services/selection.service';
 import { MarathonService } from '../../../../services/marathon.service';
-import { DataSetDataGroup, DataSetDataItem, Timeline, IdType } from 'vis-timeline/esnext';
+import { DataSetDataGroup, DataSetDataItem, IdType, Timeline } from 'vis-timeline/esnext';
 import { DataSet } from 'vis-data';
 import { Availability, AvailabilityResponse } from '../../../../model/availability';
-import moment from 'moment-timezone';
 import { ScheduleTableComponent } from './schedule-table/schedule-table.component';
-import { TranslateService } from '@ngx-translate/core';
 import { ScheduleTableOldElementComponent } from './schedule-table-old-element/schedule-table-old-element.component';
 import { WarningModalComponent } from '../warning-modal/warning-modal.component';
 import { SubmissionsTableComponent } from './submissions-table/submissions-table.component';
 import { ClonePopupComponent } from './clone-popup/clone-popup.component';
-import { MarathonScheduleExportComponent } from '../../schedule/marathon-schedule-export/marathon-schedule-export.component';
+import {
+  MarathonScheduleExportComponent,
+} from '../../schedule/marathon-schedule-export/marathon-schedule-export.component';
 import { ElementI18nComponent } from '../../../elements/element-i18n/element-i18n.component';
 import { DirectivesModule } from '../../../directives/directives.module';
 import { LoadingIndicatorComponent } from '../../../elements/loading-indicator/loading-indicator.component';
+import { TemporalServiceService } from '../../../../services/termporal/temporal-service.service';
+import { NotificationService } from '../../../../services/notification.service';
+import { NwbSwitchComponent } from '../../../components/wizi/switch/switch.component';
 
 // Options are 'id' and 'content'
-const AVAILABILITY_SORT_KEY = 'content';
+const AVAILABILITY_SORT_KEY = 'id';
 
 @Component({
-    selector: 'app-edit',
-    templateUrl: './edit.component.html',
-    styleUrls: ['./edit.component.scss'],
+  selector: 'app-edit',
+  templateUrl: './edit.component.html',
+  styleUrls: ['./edit.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     CommonModule,
     FormsModule,
     TranslateModule,
     FontAwesomeModule,
-    NwbSwitchModule,
     ScheduleTableOldElementComponent,
     WarningModalComponent,
     SubmissionsTableComponent,
@@ -50,6 +51,7 @@ const AVAILABILITY_SORT_KEY = 'content';
     ElementI18nComponent,
     DirectivesModule,
     LoadingIndicatorComponent,
+    NwbSwitchComponent,
   ],
 })
 export class EditComponent implements OnInit, OnDestroy {
@@ -58,9 +60,10 @@ export class EditComponent implements OnInit, OnDestroy {
   private submissionService = inject(SubmissionService);
   private selectionService = inject(SelectionService);
   private marathonService = inject(MarathonService);
-  private toastr = inject(NwbAlertService);
-  private translateService = inject(TranslateService);
+  private toastr = inject(NotificationService);
+  private temporalService = inject(TemporalServiceService);
 
+  // @ts-expect-error meh.
   @ViewChild('scheduleTableComponent') scheduleTable: ScheduleTableComponent | ScheduleTableOldElementComponent;
 
   scheduleInfo: ScheduleInfo;
@@ -77,14 +80,14 @@ export class EditComponent implements OnInit, OnDestroy {
   submissionsLoaded = false;
   showAllCustomData = false;
 
-
-  public timezone = moment.tz.guess();
+  // @ts-expect-error meh.
   private timeline: Timeline;
+  // @ts-expect-error meh.
   private timebar: IdType;
   public availabilitiesGroups: DataSetDataGroup;
   public availabilitiesItems: DataSetDataItem;
-  public availabilitiesSelected = [];
-  private availabilitiesSelectedItems = [];
+  public availabilitiesSelected: IdType[] = [];
+  private availabilitiesSelectedItems: IdType[] = [];
   public allAvailabilities: AvailabilityResponse = {};
 
   private _hideCompleteUsers = true;
@@ -109,7 +112,7 @@ export class EditComponent implements OnInit, OnDestroy {
 
     this.availabilitiesGroups = new DataSet([], {queue: {delay: 1000}});
     this.availabilitiesItems = new DataSet([], {queue: {delay: 1000}});
-    this.marathonId = this.route.snapshot.parent.paramMap.get('id');
+    this.marathonId = this.route.snapshot.parent?.paramMap.get('id') as string;
     this.scheduleInfo = this.route.snapshot.data.scheduleInfo;
     this.oldSlug = this.scheduleInfo.slug;
   }
@@ -123,7 +126,7 @@ export class EditComponent implements OnInit, OnDestroy {
       });
     });
 
-    const { data } = await firstValueFrom(this.scheduleService.getLines(this.marathonId, this.scheduleInfo.id));
+    const {data} = await firstValueFrom(this.scheduleService.getLines(this.marathonId, this.scheduleInfo.id));
 
     this.lines = data;
     await this.loadAllSubmissions();
@@ -140,18 +143,28 @@ export class EditComponent implements OnInit, OnDestroy {
     // Somehow this delay solves the availabilities not showing.
     await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-    this.timeline = new Timeline(document.getElementById('timeline'),
+    const oneHour = Temporal.Duration.from({hours: 1});
+
+    console.log(this.marathonService.marathon.startDate);
+
+    const timelineEl = document.getElementById('timeline');
+
+    if (!timelineEl) {
+      return;
+    }
+
+    this.timeline = new Timeline(timelineEl,
       this.availabilitiesItems,
       this.availabilitiesGroups,
       {
-        min: moment.tz(this.marathonService.marathon.startDate, this.timezone).subtract(1, 'hours').toDate(),
-        max: moment.tz(this.marathonService.marathon.endDate, this.timezone).add(1, 'hours').toDate(),
+        min: this.marathonService.marathon.startDate.subtract(oneHour).epochMilliseconds,
+        max: this.marathonService.marathon.endDate.add(oneHour).epochMilliseconds,
         orientation: {
           axis: 'both',
           item: 'bottom',
         },
       });
-    this.timebar = this.timeline.addCustomTime(this.marathonService.marathon.startDate);
+    this.timebar = this.timeline.addCustomTime(this.marathonService.marathon.startDate.epochMilliseconds);
     this.computeSchedule();
   }
 
@@ -204,7 +217,7 @@ export class EditComponent implements OnInit, OnDestroy {
               setupBlock: false,
               setupBlockText: '',
               customData: '',
-              date: new Date(),
+              date: this.temporalService.now,
               categoryId: category.id,
             });
           });
@@ -231,24 +244,15 @@ export class EditComponent implements OnInit, OnDestroy {
         this.scheduleService.updateSchedule(this.marathonId, this.scheduleInfo.id, this.scheduleInfo),
       );
 
-      const { data: newLines } = await firstValueFrom(
+      const {data: newLines} = await firstValueFrom(
         this.scheduleService.updateLines(
           this.marathonId, this.scheduleInfo.id, this.lines,
-        )
+        ),
       );
 
       this.lines = newLines;
 
-      this.translateService.get('alert.schedule.save.success').subscribe((res: string) => {
-        const alertConfig: NwbAlertConfig = {
-          message: res,
-          duration: 3000,
-          position: 'is-right',
-          color: 'is-success'
-        };
-
-        this.toastr.open(alertConfig);
-      });
+      this.toastr.toast('alert.schedule.save.success');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.log(e);
@@ -274,15 +278,7 @@ export class EditComponent implements OnInit, OnDestroy {
         // Reload the window to see the new changes?
         // window.location.reload();
         this.scheduleInfo.published = true;
-        this.translateService.get('marathon.schedule.management.action.published').subscribe((msg: string) => {
-          const alertConfig: NwbAlertConfig = {
-            message: msg,
-            duration: 5000,
-            position: 'is-right',
-            color: 'is-success',
-          };
-          this.toastr.open(alertConfig);
-        });
+        this.toastr.toast('marathon.schedule.management.action.published', 5000);
 
         this.loading = false;
       },
@@ -290,20 +286,14 @@ export class EditComponent implements OnInit, OnDestroy {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       error: (err: any) => {
         console.log(err);
-        const alertConfig: NwbAlertConfig = {
-          message: `Something went wrong: ${err.message}`,
-          duration: 5000,
-          position: 'is-right',
-          color: 'is-warning',
-        };
-        this.toastr.open(alertConfig);
+        this.toastr.toastRaw(`Something went wrong: ${err.message}`, 5000, 'warning');
       },
     });
   }
 
   async loadAllAvailabilities() {
     const allAvailabilities = await firstValueFrom(
-      this.submissionService.availabilities(this.marathonId)
+      this.submissionService.availabilities(this.marathonId),
     );
 
     this.allAvailabilities = allAvailabilities;
@@ -315,30 +305,30 @@ export class EditComponent implements OnInit, OnDestroy {
       const contentName = availabilities.length ? availabilities[0].username : username;
 
       this.availabilitiesGroups.add({
-        id: username,
+        id: username.toLowerCase(),
         content: contentName,
       });
 
       availabilities.forEach((availability, index) => {
         this.availabilitiesItems.add({
           id: username + index,
-          group: username,
-          start: availability.from,
-          end: availability.to,
+          group: username.toLowerCase(),
+          start: availability.from.epochMilliseconds,
+          end: availability.to.epochMilliseconds,
           content: '',
         });
       });
     }
 
-    this.availabilitiesGroups.flush();
-    this.availabilitiesItems.flush();
+    this.availabilitiesGroups.flush?.();
+    this.availabilitiesItems.flush?.();
 
     // Sort availabilities alphabetically.
-    const sortedData = this.availabilitiesGroups.get({ order: AVAILABILITY_SORT_KEY });
+    const sortedData = this.availabilitiesGroups.get({order: AVAILABILITY_SORT_KEY});
 
     this.availabilitiesGroups.clear();
     this.availabilitiesGroups.add(sortedData);
-    this.availabilitiesGroups.flush();
+    this.availabilitiesGroups.flush?.();
   }
 
   async loadAvailabilitiesForRunner(userId: number) {
@@ -368,16 +358,16 @@ export class EditComponent implements OnInit, OnDestroy {
         }
 
         this.availabilitiesGroups.add({
-          id: key,
+          id: key.toLowerCase(),
           content: value[0].username,
         });
 
         value.forEach((availability, index) => {
           this.availabilitiesItems.add({
             id: key + index,
-            group: key,
-            start: availability.from,
-            end: availability.to,
+            group: key.toLowerCase(),
+            start: availability.from.epochMilliseconds,
+            end: availability.to.epochMilliseconds,
             content: '',
           });
         });
@@ -434,6 +424,7 @@ export class EditComponent implements OnInit, OnDestroy {
       console: '',
       customData: '',
       customRun: true,
+      // @ts-expect-error meh.
       date: undefined,
       emulated: false,
       estimate: 'PT0S',
@@ -466,19 +457,21 @@ export class EditComponent implements OnInit, OnDestroy {
     for (let i = 1; i < this.lines.length; i++) {
       const prevEl = this.lines[i - 1];
 
-      this.lines[i].date = moment.tz(prevEl.date, this.timezone)
-        .add(moment.duration(prevEl.estimate))
-        .add(moment.duration(prevEl.setupTime))
-        .toDate();
+      this.lines[i].date = prevEl.date
+          .add(Temporal.Duration.from(prevEl.estimate))
+          .add(Temporal.Duration.from(prevEl.setupTime));
       this.lines[i].position = i;
     }
     const lastElement = this.lines[this.lines.length - 1];
 
     if (this.timeline) {
-      this.timeline.setCustomTime(moment.tz(lastElement.date, this.timezone)
-        .add(moment.duration(lastElement.estimate))
-        .add(moment.duration(lastElement.setupTime))
-        .toDate(), this.timebar);
+      this.timeline.setCustomTime(
+        lastElement.date
+          .add(Temporal.Duration.from(lastElement.estimate))
+          .add(Temporal.Duration.from(lastElement.setupTime))
+          .epochMilliseconds,
+        this.timebar,
+      );
     }
   }
 
@@ -491,7 +484,7 @@ export class EditComponent implements OnInit, OnDestroy {
 
     const usernames = run.runners
       .map((runner) => runner.profile ? runner.profile.username : null)
-      .filter((runner) => runner);
+      .filter((runner) => runner) as string[];
 
     this.removeFromTimelineWhenNoMoreRunsTodo(usernames);
   }
@@ -513,7 +506,7 @@ export class EditComponent implements OnInit, OnDestroy {
 
     const usernames = run.runners
       .map((runner) => runner.profile ? runner.profile.username : null)
-      .filter((runner) => runner);
+      .filter((runner) => runner) as string[];
 
     this.addToTimelineWhenRunsInTodo(usernames);
   }
@@ -535,7 +528,7 @@ export class EditComponent implements OnInit, OnDestroy {
       this.availabilitiesGroups.remove(filteredUsernames);
     }
 
-    this.availabilitiesGroups.flush();
+    this.availabilitiesGroups.flush?.();
   }
 
   private addToTimelineWhenRunsInTodo(usernames: string[]) {
@@ -556,20 +549,20 @@ export class EditComponent implements OnInit, OnDestroy {
           const contentUsername = av.length ? av[0].username : username;
 
           return {
-            id: username,
+            id: username.toLowerCase(),
             content: contentUsername,
           };
-        })
+        }),
       );
     }
 
-    this.availabilitiesGroups.flush();
+    this.availabilitiesGroups.flush?.();
 
-    const sortedData = this.availabilitiesGroups.get({ order: AVAILABILITY_SORT_KEY });
+    const sortedData = this.availabilitiesGroups.get({order: AVAILABILITY_SORT_KEY});
 
     this.availabilitiesGroups.clear();
     this.availabilitiesGroups.add(sortedData);
-    this.availabilitiesGroups.flush();
+    this.availabilitiesGroups.flush?.();
   }
 
   private getUsernamesInTodo(): string[] {
@@ -578,10 +571,10 @@ export class EditComponent implements OnInit, OnDestroy {
         this.todoLines.map(
           (run) => run.runners
             .map((runner) => runner.profile ? runner.profile.username : null)
-            .filter((runner) => runner)
+            .filter((runner) => runner) as string[],
         )
-          .flat()
-      )
+          .flat(),
+      ),
     ];
   }
 
@@ -589,7 +582,7 @@ export class EditComponent implements OnInit, OnDestroy {
     this.lines.forEach((run) => {
       const usernames = run.runners
         .map((runner) => runner.profile ? runner.profile.username : null)
-        .filter((runner) => runner);
+        .filter((runner) => runner) as string[];
 
       this.removeFromTimelineWhenNoMoreRunsTodo(usernames);
     });

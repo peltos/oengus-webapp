@@ -1,32 +1,36 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
 import { Marathon } from '../../../../model/marathon';
 import { Question } from '../../../../model/question';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { faBars, faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { environment } from '../../../../environments/environment';
+import { NwbSwitchComponent } from '../../../components/wizi/switch/switch.component';
 
 @Component({
     selector: 'app-marathon-incentive-settings',
     templateUrl: './incentive-settings.component.html',
     styleUrls: ['./incentive-settings.component.scss'],
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        DragDropModule,
-        FontAwesomeModule,
-        NwbSwitchModule,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    DragDropModule,
+    FontAwesomeModule,
+    NwbSwitchComponent,
+  ],
 })
 export class IncentiveSettingsComponent {
+  // @ts-expect-error meh.
   @Input() public marathon: Marathon;
+  // @ts-expect-error meh.
   @Input() public donationsQuestions: Question[];
+  // @ts-expect-error meh.
   @Input() public disabled: boolean;
 
   public env = environment;

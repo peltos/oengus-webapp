@@ -41,7 +41,7 @@
         <p class="help is-pulled-right">{{scheduleInfo.name?.length}}/50</p>
       </div>
 
-      @if (name.invalid) {
+      @if (name.invalid && name.errors) {
         <div>
           @if (name.errors.required) {
             <p class="help is-danger">
@@ -94,7 +94,7 @@
         </div>
       </div>
       <p class="help is-pulled-right">{{scheduleInfo.slug?.length}}/10</p>
-      @if (slug.invalid) {
+      @if (slug.invalid && slug.errors) {
         <div>
           @if (slug.errors.required) {
             <p class="help is-danger">
@@ -185,9 +185,9 @@
     <div id="timeline"></div>
     <div class="mtSpacing">
       <!-- custom data toggle -->
-      <nwb-switch [(ngModel)]="hideCompleteUsers">
+      <app-nwb-switch [(ngModel)]="hideCompleteUsers">
         <span>{{ 'marathon.schedule.management.hideCompleteUsers' | translate }}</span>
-      </nwb-switch>
+      </app-nwb-switch>
     </div>
     <div class="mtSpacing">
       <button type="button"
@@ -253,9 +253,9 @@
           <app-clone-popup [selfId]="scheduleInfo.id"></app-clone-popup>
 
           <!-- custom data toggle -->
-          <nwb-switch class="ml-2" [(ngModel)]="showAllCustomData" (ngModelChange)="toggleCollapseAllRows($event)" name="showAllCustomData">
+          <app-nwb-switch class="ml-2" [(ngModel)]="showAllCustomData" (ngModelChange)="toggleCollapseAllRows($event)" name="showAllCustomData">
             <span>{{ 'marathon.schedule.management.customData.newTick' | translate }}</span>
-          </nwb-switch>
+          </app-nwb-switch>
         </div>
       </div>
     </div>

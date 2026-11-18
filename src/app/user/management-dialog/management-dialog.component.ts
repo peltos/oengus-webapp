@@ -1,9 +1,8 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
 import { UserProfile } from '../../../model/user-profile';
 import { UserService } from '../../../services/user.service';
 
@@ -11,23 +10,26 @@ import { UserService } from '../../../services/user.service';
     selector: 'app-user-management-dialog',
     templateUrl: './management-dialog.component.html',
     styleUrls: ['./management-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         FormsModule,
         TranslateModule,
         FontAwesomeModule,
-        NwbSwitchModule,
     ]
 })
 export class ManagementDialogComponent implements OnInit {
   userService = inject(UserService);
 
+  // @ts-expect-error meh.
   @Input() user: UserProfile;
   // eslint-disable-next-line @angular-eslint/no-output-native
   @Output() close = new EventEmitter<void>();
 
   private roles: string[] = [];
   banLoading = false;
+
+  deleteLoading = false;
 
   ngOnInit(): void {
     this.userService.fetchRoles(this.user.id).subscribe((roles) => {
@@ -82,6 +84,15 @@ export class ManagementDialogComponent implements OnInit {
       }, complete: () => {
         this.banLoading = false;
       }
+    });
+  }
+
+  public deleteUser(): void {
+    this.deleteLoading = true;
+
+    this.userService.delete(this.user.id).subscribe(() => {
+      this.deleteLoading = false;
+      window.location.reload();
     });
   }
 

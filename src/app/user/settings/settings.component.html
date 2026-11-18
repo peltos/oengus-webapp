@@ -8,6 +8,12 @@
       <h5 class="title">{{ 'user.settings.deletingAccount.body.0' | translate }}</h5>
       <p>{{ 'user.settings.deletingAccount.body.1' | translate }}</p>
       <p>{{ 'user.settings.deletingAccount.body.2' | translate }}</p>
+      <ol class="content">
+        <li>{{ 'user.settings.deletingAccount.body.3' | translate }}</li>
+        <li>{{ 'user.settings.deletingAccount.body.4' | translate }}</li>
+        <li>{{ 'user.settings.deletingAccount.body.5' | translate }}</li>
+      </ol>
+      <p>{{ 'user.settings.deletingAccount.body.6' | translate }}</p>
       <br />
       <input class="input"
         type="text"
@@ -30,7 +36,7 @@
   </div>
 </div>
 
-@if (mfaSettings?.secretKey) {
+@if (mfaSettings && mfaSettings?.secretKey) {
   <app-mfa-modal [mfaSettings]="mfaSettings" (mfaResult)="handleMfaResult($event)"></app-mfa-modal>
 }
 
@@ -69,7 +75,7 @@
           maxlength="32">
       </div>
       <p class="help">{{'user.settings.displayName.help' | translate}}</p>
-      @if (displayName.invalid) {
+      @if (displayName.invalid && displayName.errors) {
         <div>
           @if (displayName.errors.maxlength) {
             <p class="help is-danger"
@@ -99,7 +105,7 @@
           appUsernameExistsValidator
           required>
       </div>
-      @if (username.invalid) {
+      @if (username.invalid && username.errors) {
         <div>
           @if (username.errors.minlength) {
             <p class="help is-danger"
@@ -173,7 +179,7 @@
           #mail="ngModel" id="email" email required>
       </div>
       <p class="help" [innerHTML]="'user.settings.email.help' | translate"></p>
-      @if (mail.invalid) {
+      @if (mail.invalid && mail.errors) {
         <div>
           @if (mail.errors.email) {
             <p class="help is-danger">{{'user.settings.email.error.email' | translate}}</p>
@@ -188,9 +194,9 @@
     <div class="field">
       <label for="savedGameVisible" class="label">{{'user.settings.savedGames.label' | translate}}</label>
       <div class="control is-flex">
-        <nwb-switch [(ngModel)]="user.savedGamesPublic" name="savedGameVisible">
+        <app-nwb-switch [(ngModel)]="user.savedGamesPublic" name="savedGameVisible">
           <span>{{'user.settings.savedGames.yesOption' | translate}}</span>
-        </nwb-switch>
+        </app-nwb-switch>
       </div>
     </div>
 

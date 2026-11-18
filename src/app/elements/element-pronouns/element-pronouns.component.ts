@@ -1,7 +1,8 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+// @ts-expect-error meh.
 import BulmaTagsInput from '@duncte123/bulma-tagsinput';
 import { firstValueFrom } from 'rxjs';
 import { MiscService } from '../../../services/misc.service';
@@ -13,6 +14,7 @@ import { MiscService } from '../../../services/misc.service';
     host: {
         'class': 'field',
     },
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         FormsModule,
@@ -23,9 +25,10 @@ export class ElementPronounsComponent implements OnInit {
   private miscService = inject(MiscService);
   private translateService = inject(TranslateService);
 
-  @Input() pronouns: string[];
+  @Input() pronouns: string[] = [];
   @Output() pronounsChange = new EventEmitter<string[]>();
 
+  // @ts-expect-error meh.
   @ViewChild('pronounEl', {static: true}) pronounsInput: ElementRef<HTMLInputElement>;
 
   private pronounsTagsInput: BulmaTagsInput;
@@ -54,7 +57,10 @@ export class ElementPronounsComponent implements OnInit {
         }
 
         firstValueFrom(this.miscService.searchPronouns(value))
-          .then(resolve)
+          .then((pronouns) => {
+            pronouns.push('any/all');
+            resolve(pronouns);
+          })
           .catch(() => resolve([]));
       }),
     });

@@ -10,7 +10,7 @@ import { durationExport } from './duration';
   providedIn: 'root'
 })
 export class TemporalServiceService implements LocaleSensitive {
-  private _locale: string;
+  private _locale = 'en-GB';
 
   get distance() {
     return distanceImport;
@@ -41,5 +41,23 @@ export class TemporalServiceService implements LocaleSensitive {
     this.distance.changeLocale(locale);
     this.format.changeLocale(locale);
     this.range.changeLocale(locale);
+  }
+
+  get now(): Temporal.ZonedDateTime {
+    return Temporal.Now.zonedDateTimeISO(this.timeZone.timeZone);
+  }
+
+  parseDate(date: string | number | Temporal.ZonedDateTime): Temporal.ZonedDateTime {
+    if (typeof date === 'string') {
+      return Temporal.Instant.from(date)
+        .toZonedDateTimeISO(timeZoneImport.timeZone);
+    }
+
+    if (typeof date === 'number') {
+      return Temporal.Instant.fromEpochMilliseconds(date)
+        .toZonedDateTimeISO(timeZoneImport.timeZone);
+    }
+
+    return date;
   }
 }

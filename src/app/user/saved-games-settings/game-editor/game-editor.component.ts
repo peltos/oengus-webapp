@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -18,6 +18,7 @@ import { faFloppyDisk, faPencil, faCancel } from '@fortawesome/free-solid-svg-ic
     FontAwesomeModule,
   ],
   templateUrl: './game-editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './game-editor.component.scss'
 })
 export class GameEditorComponent implements OnInit {
@@ -29,6 +30,7 @@ export class GameEditorComponent implements OnInit {
   protected readonly saveIcon = faFloppyDisk;
   protected readonly cancelIcon = faCancel;
 
+  // @ts-expect-error meh.
   @Input('game') inputGame: SavedGame;
   @Input('index') i = 0;
 
@@ -37,6 +39,7 @@ export class GameEditorComponent implements OnInit {
   editing = false;
   loading = false;
 
+  // @ts-expect-error meh.
   game: SavedGame;
 
   ngOnInit() {

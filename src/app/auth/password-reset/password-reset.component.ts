@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -12,6 +12,7 @@ import { ElementModule } from '../../elements/elements.module';
     selector: 'app-password-reset',
     templateUrl: './password-reset.component.html',
     styleUrls: ['./password-reset.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         FormsModule,
@@ -44,14 +45,17 @@ export class PasswordResetComponent implements OnInit {
   }
 
   async performReset() {
-    if (!this.resetToken) {
+    const token = this.resetToken;
+
+    if (!token) {
       this.errorTranslationKey = 'auth.passwordReset.error.PASSWORD_RESET_CODE_INVALID';
+      return;
     }
 
     this.loading = true;
 
     try {
-      const { status } = await firstValueFrom(this.authService.resetPassword(this.resetToken, this.newPassword));
+      const { status } = await firstValueFrom(this.authService.resetPassword(token, this.newPassword));
 
       if (status === 'PASSWORD_RESET_SUCCESS') {
         this.notificationClass = 'is-success';

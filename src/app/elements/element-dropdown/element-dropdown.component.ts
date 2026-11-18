@@ -1,4 +1,4 @@
-import { Component, HostBinding, Input, OnInit } from '@angular/core';
+import { Component, HostBinding, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faAngleDown } from '@fortawesome/free-solid-svg-icons';
@@ -7,6 +7,7 @@ import { faAngleDown } from '@fortawesome/free-solid-svg-icons';
     selector: 'app-element-dropdown',
     templateUrl: './element-dropdown.component.html',
     styleUrls: ['./element-dropdown.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         FontAwesomeModule,
@@ -42,6 +43,7 @@ export class ElementDropdownComponent implements OnInit {
   toggleActive(): void {
     this.isActive = !this.isActive;
     if (this.isActive) {
+      // @ts-expect-error meh.
       requestAnimationFrame(() => document.addEventListener('click', this.clickOutsideStatic));
     } else {
       this.clickOutside();
@@ -50,6 +52,7 @@ export class ElementDropdownComponent implements OnInit {
 
   clickOutside(): void {
     this.isActive = false;
+    // @ts-expect-error meh.
     document.removeEventListener('click', this.clickOutsideStatic);
   }
 }

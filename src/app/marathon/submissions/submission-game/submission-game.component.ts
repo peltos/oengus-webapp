@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Game } from '../../../../model/game';
@@ -12,6 +12,7 @@ import { SubmissionCategoryComponent } from '../submission-category/submission-c
     selector: 'app-submission-game',
     templateUrl: './submission-game.component.html',
     styleUrls: ['./submission-game.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [
         CommonModule,
         TranslateModule,
@@ -22,10 +23,15 @@ import { SubmissionCategoryComponent } from '../submission-category/submission-c
 })
 export class SubmissionGameComponent implements OnDestroy {
 
+  // @ts-expect-error meh.
   @Input() public game: Game;
+  // @ts-expect-error meh.
   @Input() public marathon: Marathon;
+  // @ts-expect-error meh.
   @Input() public showDelete: boolean;
+  // @ts-expect-error meh.
   @Input() public userIsAdmin: boolean;
+  // @ts-expect-error meh.
   @Input() public selection: Map<number, Selection>;
 
   @Output() public deleteGame = new EventEmitter<void>();
@@ -37,10 +43,12 @@ export class SubmissionGameComponent implements OnDestroy {
   }
 
   getRawStatus(category: Category): string {
+    // @ts-expect-error meh.
     if (!this.marathon.selectionDone || !this.selection[category.id]) {
       return '';
     }
 
+    // @ts-expect-error meh.
     return this.selection[category.id]?.status ?? 'TODO';
   }
 
@@ -51,7 +59,9 @@ export class SubmissionGameComponent implements OnDestroy {
 
     let status = 'REJECTED';
     this.game.categories.forEach(category => {
+      // @ts-expect-error meh.
       if (this.selection[category.id]) {
+        // @ts-expect-error meh.
         switch (this.selection[category.id].status) {
           case 'VALIDATED':
             status = 'VALIDATED';

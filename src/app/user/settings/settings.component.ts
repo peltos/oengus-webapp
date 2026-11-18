@@ -1,14 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { NwbSwitchModule } from '@oengus/ng-wizi-bulma';
 import { SelfUser } from '../../../model/user';
 import { UserService } from '../../../services/user.service';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
 import { SocialAccount } from '../../../model/social-account';
 import { SocialPlatform, SocialPlatformName } from '../../../model/social-platform';
 import { PatreonStatusDto, RelationShip } from '../../../model/annoying-patreon-shit';
@@ -19,32 +17,32 @@ import { firstValueFrom } from 'rxjs';
 import { NotificationService } from '../../../services/notification.service';
 import { MfaModalComponent } from './mfa-modal/mfa-modal.component';
 import { SyncButtonComponent } from './sync-button/sync-button.component';
-import { ConnectionComponent } from '../profile/connection/connection.component';
 import { ElementPronounsComponent } from '../../elements/element-pronouns/element-pronouns.component';
 import { ElementCountryComponent } from '../../elements/element-country/element-country.component';
 import { ElementLanguagesComponent } from '../../elements/element-languages/element-languages.component';
 import { ElementConnectionsComponent } from '../../elements/element-connections/element-connections.component';
 import { DirectivesModule } from '../../directives/directives.module';
+import { NwbSwitchComponent } from '../../components/wizi/switch/switch.component';
 
 @Component({
     selector: 'app-settings',
     templateUrl: './settings.component.html',
     styleUrls: ['./settings.component.scss'],
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        FontAwesomeModule,
-        NwbSwitchModule,
-        DirectivesModule,
-        MfaModalComponent,
-        SyncButtonComponent,
-        ConnectionComponent,
-        ElementPronounsComponent,
-        ElementCountryComponent,
-        ElementLanguagesComponent,
-        ElementConnectionsComponent,
-    ]
+    changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    FontAwesomeModule,
+    DirectivesModule,
+    MfaModalComponent,
+    SyncButtonComponent,
+    ElementPronounsComponent,
+    ElementCountryComponent,
+    ElementLanguagesComponent,
+    ElementConnectionsComponent,
+    NwbSwitchComponent,
+  ],
 })
 export class SettingsComponent {
 
@@ -84,7 +82,7 @@ export class SettingsComponent {
 
   public deactivateConfirm = false;
   public deleteConfirm = false;
-  public deleteUsername: string;
+  public deleteUsername = '';
   pwResetButtonDisabled = false;
 
   readonly title = 'Settings';
@@ -131,36 +129,42 @@ export class SettingsComponent {
   }
 
   syncDiscord(): void {
+    // @ts-expect-error meh.
     delete this.user.discordId;
 
     window.location.assign(this.authService.getDiscordAuthUri(true));
   }
 
   syncTwitch(): void {
+    // @ts-expect-error meh.
     delete this.user.twitchId;
 
     window.location.assign(this.authService.getTwitchAuthUrl(true));
   }
 
   syncPatreon(): void {
+    // @ts-expect-error meh.
     delete this.user.patreonId;
 
     window.location.assign(this.authService.patreonSyncUrl);
   }
 
   unsyncDiscord(): void {
+    // @ts-expect-error meh.
     delete this.user.discordId;
     this.removeConnectionByType('DISCORD');
     this.submit();
   }
 
   unsyncTwitch(): void {
+    // @ts-expect-error meh.
     delete this.user.twitchId;
     this.removeConnectionByType('TWITCH');
     this.submit();
   }
 
   unsyncPatreon(): void {
+    // @ts-expect-error meh.
     delete this.user.patreonId;
     this.submit();
   }
@@ -181,7 +185,8 @@ export class SettingsComponent {
       }
 
       this.notificationService.toast('alert.user.update.success');
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       if (error.error.type === 'AccountSyncOrPasswordRequiredException') {
         alert('Please set a password or connect twitch/discord before proceeding');
         window.location.reload();
@@ -280,7 +285,8 @@ export class SettingsComponent {
       }
 
       window.location.reload(); // just to make sure stuff get purged
-    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
       alert(`Failed to reset MFA: ${JSON.stringify(e.error)}`);
     } finally {
       this.loading = true;
@@ -297,7 +303,9 @@ export class SettingsComponent {
         queryParams['code'],
       );
 
+      // @ts-expect-error valid code.
       if (typeof this.user[`${params['service'].toLowerCase()}Id`] !== 'undefined' && 'id' in response) {
+        // @ts-expect-error valid code.
         this.user[`${params['service'].toLowerCase()}Id`] = response.id;
         this.addOrUpdateConnectionByType(params['service'].toUpperCase(), response.name);
       }
@@ -320,7 +328,8 @@ export class SettingsComponent {
 
         this.router.navigate(['/user/settings']);
       });
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       this.router.navigate(['/user/settings']);
 
       if (error.error) {
